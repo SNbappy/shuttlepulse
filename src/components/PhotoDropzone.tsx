@@ -35,10 +35,11 @@ export default function PhotoDropzone({
         result.url,
         result.hostedOnImgBB
           ? "Photo uploaded to ImgBB cloud storage."
-          : "Photo ready (ImgBB API connected for deployment)."
+          : "Photo ready."
       );
-    } catch {
-      onPhotoChange(undefined, "Could not process selected photo.");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Could not process selected photo.";
+      onPhotoChange(undefined, msg);
     } finally {
       setUploading(false);
     }

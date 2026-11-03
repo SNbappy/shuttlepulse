@@ -2,9 +2,9 @@ import { NextResponse } from "next/server";
 
 /**
  * POST /api/upload-image
- * Uploads a base64 image to ImgBB using https://api.imgbb.com/1/upload
- * Reads `IMGBB_API_KEY` or `NEXT_PUBLIC_IMGBB_API_KEY` from environment variables
- * (or an optional `apiKey` passed in the request body).
+ * Uploads a base64 or binary image directly to ImgBB CDN (https://api.imgbb.com/1/upload)
+ * Environment Variable:
+ *   - IMGBB_API_KEY: 32-character API key from https://api.imgbb.com/
  */
 export async function POST(req: Request) {
   try {
@@ -29,46 +29,54 @@ export async function POST(req: Request) {
     const cleanKey =
       rawKey && rawKey !== "your_imgbb_api_key_here" ? rawKey.trim() : "";
 
+    if (!cleanKey) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            "ImgBB API key is not configured. Please set IMGBB_API_KEY in environment variables.",
+        },
+        { status: 400 }
+      );
+    }
+
     // Strip data:image/...;base64, prefix for ImgBB
     const base64Clean = imageBase64.replace(/^data:image\/[a-zA-Z+]+;base64,/, "");
 
-    if (cleanKey) {
-      const formData = new FormData();
-      formData.append("image", base64Clean);
+    const formData = new FormData();
+    formData.append("image", base64Clean);
 
-      const imgbbRes = await fetch(
-        `https://api.imgbb.com/1/upload?key=${encodeURIComponent(cleanKey)}`,
-        {
-          method: "POST",
-          body: formData,
-        }
-      );
-
-      const data = await imgbbRes.json();
-
-      if (imgbbRes.ok && data?.success && data?.data?.display_url) {
-        return NextResponse.json({
-          success: true,
-          url: data.data.display_url,
-          deleteUrl: data.data.delete_url,
-          hostedOnImgBB: true,
-          message: "Photo uploaded to ImgBB cloud storage.",
-        });
+    const imgbbRes = await fetch(
+      `https://api.imgbb.com/1/upload?key=${encodeURIComponent(cleanKey)}`,
+      {
+        method: "POST",
+        body: formData,
       }
-    }
+    );
 
-    // Pre-deployment fallback if IMGBB_API_KEY is not set in .env.local yet
-    return NextResponse.json({
-      success: true,
-      url: imageBase64,
-      hostedOnImgBB: false,
-      message:
-        "Photo saved locally (set IMGBB_API_KEY in .env.local at deployment for cloud hosting).",
-    });
+    const data = await imgbbRes.json();
+
+    if (imgbbRes.ok && data?.success && data?.data?.display_url) {
+      return NextResponse.json({
+        success: true,
+        url: data.data.display_url || data.data.url,
+        deleteUrl: data.data.delete_url,
+        hostedOnImgBB: true,
+        message: "Photo uploaded to ImgBB cloud storage.",
+      });
+    } else {
+      const errMsg =
+        data?.error?.message ||
+        "ImgBB rejected image upload. Please check your IMGBB_API_KEY and image format.";
+      return NextResponse.json(
+        { success: false, message: errMsg },
+        { status: 400 }
+      );
+    }
   } catch (error) {
     console.error("ImgBB upload route error:", error);
     return NextResponse.json(
-      { success: false, message: "Failed to upload image." },
+      { success: false, message: "Failed to upload image to ImgBB." },
       { status: 500 }
     );
   }

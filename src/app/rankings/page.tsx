@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useClub } from "@/context/ClubContext";
 import ModalSheet from "@/components/ModalSheet";
 import UserAvatar from "@/components/UserAvatar";
@@ -13,9 +14,10 @@ import {
   calculateMonthlyRankings,
 } from "@/lib/mockData";
 import { RankedPlayer } from "@/types";
-import { ChevronRight, ChevronLeft, Info, Lock } from "lucide-react";
+import { ChevronRight, ChevronLeft, Info, Lock, Users, BarChart3 } from "lucide-react";
 
 export default function RankingsPage() {
+  const router = useRouter();
   const { users, ratings, sessions } = useClub();
 
   const currentPeriod = getCurrentCalendarPeriod();
@@ -60,6 +62,14 @@ export default function RankingsPage() {
   const activeWeekMeta =
     weeksInMonth.find((w) => w.key === selectedWeekKey) || weeksInMonth[0];
 
+  const activeRatings =
+    viewMode === "monthly"
+      ? ratings.filter((r) => weeksInMonth.map((w) => w.key).includes(r.weekKey))
+      : ratings.filter((r) => r.weekKey === selectedWeekKey);
+
+  const uniqueRatersCount = new Set(activeRatings.map((r) => r.raterId)).size;
+  const totalReviewsCount = activeRatings.length;
+
   return (
     <div className="animate-fade-up mx-auto max-w-3xl px-4 pt-4 pb-10 space-y-4">
       {/* Clean Single-Line Header Row with (i) How Ranking Works Button */}
@@ -82,6 +92,21 @@ export default function RankingsPage() {
           <Info className="h-3.5 w-3.5 text-emerald-600" />
           How Ranking Works
         </button>
+      </div>
+
+      {/* Reviewers & Participation Status Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-emerald-50/80 border border-emerald-100 px-3.5 py-2 text-xs">
+        <div className="flex items-center gap-1.5 font-medium text-emerald-950">
+          <Users className="h-4 w-4 text-emerald-600 shrink-0" />
+          <span>
+            {totalReviewsCount > 0
+              ? `${totalReviewsCount} peer survey${totalReviewsCount === 1 ? "" : "s"} submitted by ${uniqueRatersCount} member${uniqueRatersCount === 1 ? "" : "s"}`
+              : "No peer ratings submitted yet for this period."}
+          </span>
+        </div>
+        <span className="font-mono text-[11px] text-emerald-800 font-bold">
+          {activeList.length} Ranked {activeList.length === 1 ? "Player" : "Players"}
+        </span>
       </div>
 
       {/* Multi-Year Month Navigation Bar */}
@@ -209,7 +234,10 @@ export default function RankingsPage() {
                     {player.name}
                   </p>
                   <p className="text-[11px] text-slate-500 truncate">
-                    {player.playStyle}
+                    {player.playStyle} •{" "}
+                    <span className="font-mono font-semibold text-emerald-700">
+                      {player.tokens.toFixed(2)} TK
+                    </span>
                   </p>
                 </div>
               </div>
@@ -217,10 +245,13 @@ export default function RankingsPage() {
               <div className="flex items-center gap-2 shrink-0">
                 <div className="text-right whitespace-nowrap">
                   <span className="rounded-lg bg-emerald-50 border border-emerald-200/70 px-2.5 py-1 font-mono text-xs font-bold text-emerald-800">
-                    {player.bayesianOut10} / 10
+                    {player.bayesianOut10.toFixed(2)} / 10.00
                   </span>
                   <span className="block text-[10px] text-slate-400 mt-0.5">
-                    {player.votesReceived} surveys
+                    {player.votesReceived}{" "}
+                    {player.votesReceived === 1
+                      ? "member rated"
+                      : "members rated"}
                   </span>
                 </div>
                 <ChevronRight className="h-4 w-4 text-slate-300 shrink-0" />
@@ -231,11 +262,12 @@ export default function RankingsPage() {
       ) : (
         <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-8 text-center shadow-sm">
           <p className="text-xs sm:text-sm font-bold text-slate-700">
-            No registered members to rank yet
+            Rankings Have Not Started Yet
           </p>
-          <p className="mt-1 text-xs text-slate-400">
-            Once club members register and submit weekly 25-question surveys,
-            live Bayesian rankings will appear here.
+          <p className="mt-1 text-xs text-slate-400 max-w-md mx-auto">
+            Before members start submitting peer ratings, the ranking list will
+            not start. Once members submit their weekly 25-question surveys, live
+            Bayesian rankings will appear here.
           </p>
         </div>
       )}
@@ -261,7 +293,7 @@ export default function RankingsPage() {
                   Bayesian (W)
                 </span>
                 <strong className="font-mono text-sm text-emerald-700">
-                  {selectedPlayer.bayesianOut10}/10
+                  {selectedPlayer.bayesianOut10.toFixed(2)} / 10.00
                 </strong>
               </div>
               <div>
@@ -269,7 +301,7 @@ export default function RankingsPage() {
                   Raw Mean (R)
                 </span>
                 <strong className="font-mono text-sm text-slate-800">
-                  {selectedPlayer.rawAverage}/10
+                  {selectedPlayer.rawAverage.toFixed(2)} / 10.00
                 </strong>
               </div>
               <div>
@@ -277,7 +309,7 @@ export default function RankingsPage() {
                   Surveys (v)
                 </span>
                 <strong className="font-mono text-sm text-slate-800">
-                  {selectedPlayer.votesReceived}
+                  {selectedPlayer.votesReceived} rated
                 </strong>
               </div>
             </div>
@@ -299,7 +331,7 @@ export default function RankingsPage() {
                         {stat.label}
                       </span>
                       <strong className="font-mono text-slate-900">
-                        {stat.val} / 10
+                        {stat.val.toFixed(2)} / 10.00
                       </strong>
                     </div>
                     <div className="h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
@@ -331,7 +363,7 @@ export default function RankingsPage() {
                         </span>
                         <strong className="font-mono text-slate-900">
                           {wkData && wkData.votes > 0
-                            ? wkData.bayesianOut10
+                            ? `${wkData.bayesianOut10.toFixed(2)}`
                             : "—"}
                         </strong>
                       </div>
@@ -340,6 +372,21 @@ export default function RankingsPage() {
                 </div>
               </div>
             )}
+
+            <div className="pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => {
+                  const targetId = selectedPlayer.memberId;
+                  setSelectedPlayer(null);
+                  router.push(`/rankings/${targetId}`);
+                }}
+                className="btn-interactive w-full inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 py-2.5 text-xs font-bold text-white shadow-sm hover:opacity-95"
+              >
+                <BarChart3 className="h-4 w-4" />
+                View 25-Question Performance Breakdown
+              </button>
+            </div>
           </div>
         )}
       </ModalSheet>

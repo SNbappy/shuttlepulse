@@ -157,7 +157,7 @@ export default function DonatePage() {
             </span>
             <div className="mt-1 flex items-baseline gap-1.5">
               <span className="font-mono text-2xl sm:text-3xl font-black text-white">
-                {grandTotal}
+                {grandTotal.toFixed(2)}
               </span>
               <span className="rounded-md bg-lime-400/20 border border-lime-300/30 px-1.5 py-0.5 font-mono text-xs font-extrabold text-lime-300">
                 TK
@@ -221,7 +221,7 @@ export default function DonatePage() {
                               key={d.id}
                               className="shrink-0 whitespace-nowrap inline-flex items-center rounded-md border border-emerald-200/70 bg-emerald-50/70 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-emerald-800"
                             >
-                              #{idx + 1}: {d.amount} TK
+                              #{idx + 1}: {d.amount.toFixed(2)} TK
                             </span>
                           ))}
                           {latestDate && (
@@ -241,7 +241,7 @@ export default function DonatePage() {
                   <div className="flex items-center gap-2 shrink-0">
                     <div className="text-right whitespace-nowrap">
                       <span className="font-mono text-xs sm:text-sm font-extrabold text-emerald-700 block">
-                        {item.total} TK
+                        {item.total.toFixed(2)} TK
                       </span>
                       <span className="block text-[10px] text-slate-400">
                         Total
@@ -297,7 +297,7 @@ export default function DonatePage() {
                   Total Contributed ({inspectedMemberDonations.length} entries)
                 </span>
                 <span className="font-mono text-lg font-extrabold text-emerald-700">
-                  {inspectedMemberTotal} TK
+                  {inspectedMemberTotal.toFixed(2)} TK
                 </span>
               </div>
 
@@ -343,7 +343,7 @@ export default function DonatePage() {
 
                     <div className="flex items-center gap-1.5 shrink-0">
                       <span className="whitespace-nowrap rounded-lg bg-emerald-100/80 px-2 py-1 font-mono font-bold text-emerald-800">
-                        +{don.amount} TK
+                        +{don.amount.toFixed(2)} TK
                       </span>
                       {isAdmin && (
                         <button

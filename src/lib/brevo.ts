@@ -1,7 +1,6 @@
 /**
  * Brevo (Sendinblue) OTP Email Verification Service
- * Works in both Web (via `/api/auth/send-otp` or direct HTTPS) and Capacitor Mobile App builds.
- * Reads `NEXT_PUBLIC_BREVO_API_KEY` orAdmin-configured Brevo key at deployment time.
+ * Dispatches 6-digit verification code to recipient inbox via Brevo SMTP API.
  */
 
 export interface SendOtpResponse {
@@ -9,7 +8,6 @@ export interface SendOtpResponse {
   otp: string;
   expiresAt: number;
   sentViaBrevo: boolean;
-  devOtpPreview?: string;
   message: string;
 }
 
@@ -19,54 +17,58 @@ export async function sendVerificationOtpEmail(
   customBrevoApiKey?: string
 ): Promise<SendOtpResponse> {
   const cleanEmail = email.trim().toLowerCase();
-  const otp = String(Math.floor(100000 + Math.random() * 900000));
-  const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
 
-  // 1. Try Next.js server API route first (when running on web server)
+  // 1. Next.js Server API Route (Primary path on Web)
   try {
     const apiRes = await fetch("/api/auth/send-otp", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email: cleanEmail, name }),
     });
-    if (apiRes.ok) {
-      const data = (await apiRes.json()) as SendOtpResponse;
-      if (data?.success && data?.otp) {
-        return data;
-      }
+
+    const data = await apiRes.json();
+    if (apiRes.ok && data?.success && data?.otp) {
+      return {
+        success: true,
+        otp: data.otp,
+        expiresAt: data.expiresAt,
+        sentViaBrevo: Boolean(data.sentViaBrevo),
+        message: data.message,
+      };
+    } else {
+      throw new Error(data?.message || "Failed to send verification email via Brevo.");
     }
-  } catch {
-    // Static mobile app build or offline fallback — proceed to direct Brevo call
-  }
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
 
-  // 2. Direct Brevo v3 HTTPS call (for static / Capacitor mobile app builds)
-  const rawKey =
-    customBrevoApiKey || process.env.NEXT_PUBLIC_BREVO_API_KEY || "";
-  const brevoKey =
-    rawKey && rawKey !== "your_brevo_api_key_here" ? rawKey.trim() : "";
-  const senderEmail =
-    process.env.NEXT_PUBLIC_BREVO_SENDER_EMAIL?.trim() ||
-    "no-reply@shuttlepulse.com";
-  const senderName =
-    process.env.NEXT_PUBLIC_BREVO_SENDER_NAME?.trim() ||
-    "ShuttlePulse Badminton Club";
+    // 2. Direct Brevo v3 HTTPS call fallback (for static / Capacitor standalone mobile builds)
+    const rawKey =
+      customBrevoApiKey || process.env.NEXT_PUBLIC_BREVO_API_KEY || "";
+    const brevoKey =
+      rawKey && rawKey !== "your_brevo_api_key_here" ? rawKey.trim() : "";
+    const senderEmail =
+      process.env.NEXT_PUBLIC_BREVO_SENDER_EMAIL?.trim() ||
+      "no-reply@shuttlepulse.com";
+    const senderName =
+      process.env.NEXT_PUBLIC_BREVO_SENDER_NAME?.trim() ||
+      "ShuttlePulse Badminton Club";
 
-  if (brevoKey) {
-    try {
+    if (brevoKey) {
+      const otp = String(Math.floor(100000 + Math.random() * 900000));
+      const expiresAt = Date.now() + 10 * 60 * 1000;
+
       const htmlContent = `
-        <div style="font-family: Inter, Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 24px; border-radius: 16px; border: 1px solid #e2e8f0; background: #ffffff;">
-          <h2 style="margin: 0 0 8px; color: #064e3b; font-size: 20px;">ShuttlePulse Account Verification</h2>
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 32px 24px; border-radius: 20px; border: 1px solid #e2e8f0; background: #ffffff;">
+          <h2 style="margin: 0 0 12px; color: #064e3b; font-size: 20px;">ShuttlePulse Verification</h2>
           <p style="margin: 0 0 16px; color: #475569; font-size: 14px;">
-            Hi ${name || "Player"}, use the 6-digit verification code below to verify your club membership and claim your <strong>500 TK</strong> Shuttle Token balance:
+            Hi ${name || "Player"}, use this 6-digit code to verify your membership and claim your <strong>500.00 TK</strong> balance:
           </p>
-          <div style="background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 12px; padding: 16px; text-align: center; margin-bottom: 16px;">
-            <span style="font-family: monospace; font-size: 28px; font-weight: 800; letter-spacing: 6px; color: #047857;">
+          <div style="background: #ecfdf5; border: 2px dashed #6ee7b7; border-radius: 12px; padding: 18px; text-align: center; margin-bottom: 16px;">
+            <span style="font-family: monospace; font-size: 30px; font-weight: 800; letter-spacing: 8px; color: #047857;">
               ${otp}
             </span>
           </div>
-          <p style="margin: 0; color: #94a3b8; font-size: 12px;">
-            This code expires in 10 minutes.
-          </p>
+          <p style="margin: 0; color: #94a3b8; font-size: 12px;">This code expires in 10 minutes.</p>
         </div>
       `;
 
@@ -91,20 +93,14 @@ export async function sendVerificationOtpEmail(
           otp,
           expiresAt,
           sentViaBrevo: true,
-          message: `A 6-digit verification OTP has been sent to ${cleanEmail} via Brevo.`,
+          message: `A 6-digit verification code has been sent to ${cleanEmail} via Brevo.`,
         };
+      } else {
+        const directErr = await brevoRes.text();
+        throw new Error(`Brevo Direct Error: ${directErr}`);
       }
-    } catch (err) {
-      console.warn("Direct Brevo request error:", err);
     }
-  }
 
-  return {
-    success: true,
-    otp,
-    expiresAt,
-    sentViaBrevo: false,
-    devOtpPreview: otp,
-    message: `Verification code generated for ${cleanEmail}. (Configure BREVO_API_KEY at deployment for live email delivery).`,
-  };
+    throw new Error(errorMsg);
+  }
 }

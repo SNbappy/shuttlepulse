@@ -357,7 +357,7 @@ export default function WeeklyRatingsPage() {
                   {existing ? (
                     <span className="whitespace-nowrap inline-flex items-center gap-1 rounded-lg bg-slate-100 border border-slate-200 px-2.5 py-1 font-mono text-xs font-bold text-slate-700">
                       <Lock className="h-3 w-3 text-emerald-600 shrink-0" />
-                      {existing.overallScore} / 10
+                      {existing.overallScore.toFixed(2)} / 10.00
                     </span>
                   ) : isAdmin ? (
                     <span className="whitespace-nowrap rounded-lg bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-500">

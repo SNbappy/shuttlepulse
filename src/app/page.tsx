@@ -174,7 +174,7 @@ export default function HomePage() {
                     Club Fund
                   </span>
                   <span className="mt-0.5 block font-mono text-xl sm:text-2xl font-extrabold text-white whitespace-nowrap">
-                    {totalDonated}{" "}
+                    {totalDonated.toFixed(2)}{" "}
                     <span className="text-[11px] font-bold text-lime-300">
                       TK
                     </span>
@@ -188,7 +188,7 @@ export default function HomePage() {
                 </span>
                 <div className="mt-0.5 flex items-baseline gap-2">
                   <span className="font-mono text-3xl sm:text-4xl font-black tracking-tight text-white drop-shadow-sm">
-                    {currentUser ? currentUser.tokens : 500}
+                    {(currentUser ? currentUser.tokens : 500).toFixed(2)}
                   </span>
                   <span className="rounded-md bg-lime-400/20 border border-lime-300/30 px-2 py-0.5 font-mono text-xs font-extrabold text-lime-300">
                     TK
@@ -205,7 +205,7 @@ export default function HomePage() {
                 <>
                   Last split:{" "}
                   <strong className="font-mono font-bold text-lime-300">
-                    -{latestSession.costPerMember} TK
+                    -{latestSession.costPerMember.toFixed(2)} TK
                   </strong>
                 </>
               ) : (
@@ -310,7 +310,7 @@ export default function HomePage() {
               Donations
             </p>
             <p className="text-[11px] text-slate-500 mt-0.5 truncate">
-              {totalDonated} TK fund
+              {totalDonated.toFixed(2)} TK fund
             </p>
           </div>
         </Link>
@@ -365,12 +365,12 @@ export default function HomePage() {
                       {player.name}
                     </p>
                     <p className="text-[11px] text-slate-500 truncate">
-                      {player.playStyle}
+                      {player.playStyle} • <span className="font-mono text-emerald-700 font-semibold">{player.tokens.toFixed(2)} TK</span>
                     </p>
                   </div>
                 </div>
                 <span className="shrink-0 whitespace-nowrap rounded-lg bg-emerald-50 border border-emerald-200/70 px-2.5 py-1 font-mono text-xs font-bold text-emerald-800">
-                  {player.bayesianOut10} / 10
+                  {player.bayesianOut10.toFixed(2)} / 10.00
                 </span>
               </div>
             ))}
@@ -378,11 +378,10 @@ export default function HomePage() {
         ) : (
           <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 py-6 text-center">
             <p className="text-xs font-semibold text-slate-600">
-              No registered club members yet
+              Rankings Have Not Started Yet
             </p>
             <p className="mt-1 text-[11px] text-slate-400">
-              Members can register from the Sign In page (+500 TK welcome
-              balance).
+              Standings will appear as soon as members submit weekly 25-question peer evaluations.
             </p>
           </div>
         )}
@@ -419,7 +418,7 @@ export default function HomePage() {
                   </div>
                 </div>
                 <span className="shrink-0 whitespace-nowrap font-mono text-xs font-bold text-emerald-700">
-                  {m.tokens} TK
+                  {m.tokens.toFixed(2)} TK
                 </span>
               </div>
             ))}
@@ -465,7 +464,7 @@ export default function HomePage() {
                     tx.amount >= 0 ? "text-emerald-600" : "text-rose-600"
                   }`}
                 >
-                  {tx.amount >= 0 ? `+${tx.amount}` : tx.amount} TK
+                  {tx.amount >= 0 ? `+${tx.amount.toFixed(2)}` : tx.amount.toFixed(2)} TK
                 </span>
               </div>
             ))}

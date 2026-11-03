@@ -185,7 +185,7 @@ export default function AttendancePage() {
       "Member Name",
       "Balance (TK)",
       ...orderedSessions.map(
-        (s, idx) => `S${idx + 1}\n${s.date.slice(5)}\n(-${s.costPerMember} TK)`
+        (s, idx) => `S${idx + 1}\n${s.date.slice(5)}\n(-${s.costPerMember.toFixed(2)} TK)`
       ),
       "Present Total",
     ];
@@ -204,7 +204,7 @@ export default function AttendancePage() {
 
       return [
         member.name,
-        `${member.tokens} TK`,
+        `${member.tokens.toFixed(2)} TK`,
         ...sessionStatuses,
         `${presentSessions} / ${orderedSessions.length}`,
       ];
@@ -370,7 +370,7 @@ export default function AttendancePage() {
                           </span>
                         </div>
                         <span className="block font-mono text-[10px] font-normal text-slate-400">
-                          -{sess.costPerMember} TK
+                          -{sess.costPerMember.toFixed(2)} TK
                         </span>
                       </th>
                     );
@@ -407,7 +407,7 @@ export default function AttendancePage() {
                               {member.name}
                             </p>
                             <p className="text-[11px] font-mono font-semibold text-emerald-700">
-                              {member.tokens} TK
+                              {member.tokens.toFixed(2)} TK
                             </p>
                           </div>
                         </div>
@@ -516,7 +516,7 @@ export default function AttendancePage() {
                     Split ({editPresentCount} present)
                   </span>
                   <strong className="font-mono text-sm font-bold text-emerald-700 whitespace-nowrap">
-                    -{editCostPerMember} TK / player
+                    -{editCostPerMember.toFixed(2)} TK / player
                   </strong>
                 </div>
               </div>
@@ -560,7 +560,7 @@ export default function AttendancePage() {
                           {m.name}
                         </p>
                         <p className="text-[11px] font-mono text-slate-500 truncate">
-                          {m.tokens} TK
+                          {m.tokens.toFixed(2)} TK
                           {delta !== 0 && (
                             <span
                               className={
@@ -570,8 +570,8 @@ export default function AttendancePage() {
                               }
                             >
                               {" "}
-                              ({delta > 0 ? `+${delta}` : delta} →{" "}
-                              {projectedTokens} TK)
+                              ({delta > 0 ? `+${delta.toFixed(2)}` : delta.toFixed(2)} →{" "}
+                              {projectedTokens.toFixed(2)} TK)
                             </span>
                           )}
                         </p>
@@ -606,7 +606,7 @@ export default function AttendancePage() {
                   Shuttle Cost
                 </span>
                 <strong className="font-mono text-slate-900">
-                  {inspectedSession.shuttleCost} TK
+                  {inspectedSession.shuttleCost.toFixed(2)} TK
                 </strong>
               </div>
               <div>
@@ -622,7 +622,7 @@ export default function AttendancePage() {
                   Per Player
                 </span>
                 <strong className="font-mono text-emerald-700">
-                  -{inspectedSession.costPerMember} TK
+                  -{inspectedSession.costPerMember.toFixed(2)} TK
                 </strong>
               </div>
             </div>
@@ -668,13 +668,13 @@ export default function AttendancePage() {
 
             <div className="flex items-center justify-between gap-2 rounded-xl bg-emerald-50/80 border border-emerald-100 px-3.5 py-2.5 text-xs">
               <span className="text-slate-600 whitespace-nowrap">
-                <strong className="text-slate-900">{shuttleCost} TK</strong> ÷{" "}
+                <strong className="text-slate-900">{shuttleCost.toFixed(2)} TK</strong> ÷{" "}
                 <strong className="text-emerald-700">
                   {presentCount} present
                 </strong>
               </span>
               <span className="font-mono font-bold text-emerald-700 whitespace-nowrap">
-                -{costPerMember} TK / player
+                -{costPerMember.toFixed(2)} TK / player
               </span>
             </div>
 
@@ -696,9 +696,9 @@ export default function AttendancePage() {
                         {member.name}
                       </p>
                       <p className="text-[11px] font-mono text-slate-500 truncate">
-                        {member.tokens} TK
+                        {member.tokens.toFixed(2)} TK
                         {isPresent &&
-                          ` → ${(member.tokens - costPerMember).toFixed(0)} TK`}
+                          ` → ${(member.tokens - costPerMember).toFixed(2)} TK`}
                       </p>
                     </div>
 
@@ -734,7 +734,7 @@ export default function AttendancePage() {
               disabled={presentCount === 0}
               className="w-full rounded-xl bg-emerald-600 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-emerald-500 disabled:opacity-50"
             >
-              Save Attendance & Deduct {costPerMember} TK
+              Save Attendance & Deduct {costPerMember.toFixed(2)} TK
             </button>
           </form>
         ) : (

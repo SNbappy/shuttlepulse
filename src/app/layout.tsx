@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { ClubProvider } from "@/context/ClubContext";
 import Navbar from "@/components/Navbar";
+import RouteGuard from "@/components/RouteGuard";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -49,7 +50,9 @@ export default function RootLayout({
         <ClubProvider>
           <div className="flex min-h-screen flex-col">
             <Navbar />
-            <main className="flex-1">{children}</main>
+            <RouteGuard>
+              <main className="flex-1">{children}</main>
+            </RouteGuard>
             <footer className="py-4 text-center text-[11px] text-slate-400">
               Developed by{" "}
               <a

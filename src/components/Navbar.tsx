@@ -113,26 +113,28 @@ export default function Navbar() {
             </div>
           </Link>
 
-          {/* Desktop Pill Navigation */}
-          <nav className="hidden md:flex items-center gap-1 rounded-full border border-slate-200/80 bg-slate-100/70 p-1">
-            {navItems.map((item) => {
-              const active = pathname === item.href;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => handleNavClick(item.href)}
-                  className={`whitespace-nowrap rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all ${
-                    active
-                      ? "bg-emerald-600 text-white shadow-sm"
-                      : "text-slate-600 hover:text-slate-900"
-                  }`}
-                >
-                  {item.label}
-                </Link>
-              );
-            })}
-          </nav>
+          {/* Desktop Pill Navigation (Only visible for authenticated users) */}
+          {currentUser && (
+            <nav className="hidden md:flex items-center gap-1 rounded-full border border-slate-200/80 bg-slate-100/70 p-1">
+              {navItems.map((item) => {
+                const active = pathname === item.href;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => handleNavClick(item.href)}
+                    className={`whitespace-nowrap rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all ${
+                      active
+                        ? "bg-emerald-600 text-white shadow-sm"
+                        : "text-slate-600 hover:text-slate-900"
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </nav>
+          )}
 
           {/* Right: Profile Pill with Dropdown (View Profile & Sign Out) */}
           <div ref={dropdownRef} className="relative flex items-center gap-2 shrink-0">
@@ -154,7 +156,7 @@ export default function Navbar() {
                     </span>
                   ) : (
                     <span className="font-mono font-bold text-emerald-800">
-                      {currentUser.tokens} TK
+                      {currentUser.tokens.toFixed(2)} TK
                     </span>
                   )}
                   <UserAvatar
@@ -199,7 +201,7 @@ export default function Navbar() {
                       onClick={() => {
                         setMenuOpen(false);
                         logout();
-                        router.push("/auth");
+                        router.push("/login");
                       }}
                       className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-rose-600 transition hover:bg-rose-50"
                     >
@@ -211,48 +213,50 @@ export default function Navbar() {
               </>
             ) : (
               <Link
-                href="/auth"
-                onClick={() => handleNavClick("/auth")}
+                href="/login"
+                onClick={() => handleNavClick("/login")}
                 className="btn-interactive btn-shine whitespace-nowrap rounded-full bg-emerald-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-emerald-500"
               >
-                Sign in
+                Sign In
               </Link>
             )}
           </div>
         </div>
       </header>
 
-      {/* Floating Glass Mobile Bottom Navigation Dock */}
-      <div className="fixed bottom-3 left-0 right-0 z-40 px-3 md:hidden pointer-events-none">
-        <nav
-          aria-label="Bottom Navigation"
-          className="pointer-events-auto mx-auto max-w-md rounded-2xl border border-slate-200/90 bg-white/95 px-2 py-1.5 shadow-[0_12px_32px_-8px_rgba(6,78,59,0.16)] backdrop-blur-md"
-        >
-          <div className="grid grid-cols-5 gap-1">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const active = pathname === item.href;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => handleNavClick(item.href)}
-                  className={`flex flex-col items-center justify-center rounded-xl py-1.5 transition-all active:scale-90 ${
-                    active
-                      ? "bg-emerald-600 text-white shadow-sm"
-                      : "text-slate-500 hover:text-slate-800"
-                  }`}
-                >
-                  <Icon className="h-4 w-4 stroke-[2]" />
-                  <span className="mt-0.5 text-[10px] font-semibold whitespace-nowrap">
-                    {item.label}
-                  </span>
-                </Link>
-              );
-            })}
-          </div>
-        </nav>
-      </div>
+      {/* Floating Glass Mobile Bottom Navigation Dock (Authenticated users only) */}
+      {currentUser && (
+        <div className="fixed bottom-3 left-0 right-0 z-40 px-3 md:hidden pointer-events-none">
+          <nav
+            aria-label="Bottom Navigation"
+            className="pointer-events-auto mx-auto max-w-md rounded-2xl border border-slate-200/90 bg-white/95 px-2 py-1.5 shadow-[0_12px_32px_-8px_rgba(6,78,59,0.16)] backdrop-blur-md"
+          >
+            <div className="grid grid-cols-5 gap-1">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                const active = pathname === item.href;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => handleNavClick(item.href)}
+                    className={`flex flex-col items-center justify-center rounded-xl py-1.5 transition-all active:scale-90 ${
+                      active
+                        ? "bg-emerald-600 text-white shadow-sm"
+                        : "text-slate-500 hover:text-slate-800"
+                    }`}
+                  >
+                    <Icon className="h-4 w-4 stroke-[2]" />
+                    <span className="mt-0.5 text-[10px] font-semibold whitespace-nowrap">
+                      {item.label}
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+          </nav>
+        </div>
+      )}
     </>
   );
 }

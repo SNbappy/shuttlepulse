@@ -210,63 +210,77 @@ export function calculateWeeklyRankings(
   weekKey: string
 ): RankedPlayer[] {
   const weekRatings = ratings.filter((r) => r.weekKey === weekKey);
+  if (weekRatings.length === 0) {
+    // Before starting giving any rank, the rank list will not start
+    return [];
+  }
+
   const playerMembers = members.filter((u) => u.role === "member");
 
   const C =
-    weekRatings.length > 0
-      ? weekRatings.reduce((acc, r) => acc + r.overallScore, 0) /
-        weekRatings.length
-      : 7.5;
+    weekRatings.reduce((acc, r) => acc + r.overallScore, 0) /
+    weekRatings.length;
   const m = 2; // Minimum confidence vote threshold
 
-  const unranked = playerMembers.map((member) => {
-    const myRatings = weekRatings.filter((r) => r.targetMemberId === member.id);
-    const v = myRatings.length;
+  const unranked = playerMembers
+    .map((member) => {
+      const myRatings = weekRatings.filter(
+        (r) => r.targetMemberId === member.id
+      );
+      const v = myRatings.length;
+      if (v === 0) return null; // Do not rank unrated players before they receive peer ratings
 
-    const avgGameplay =
-      v > 0 ? myRatings.reduce((s, r) => s + r.scores.gameplay, 0) / v : 0;
-    const avgStamina =
-      v > 0 ? myRatings.reduce((s, r) => s + r.scores.stamina, 0) / v : 0;
-    const avgTactics =
-      v > 0 ? myRatings.reduce((s, r) => s + r.scores.tactics, 0) / v : 0;
-    const avgSportsmanship =
-      v > 0 ? myRatings.reduce((s, r) => s + r.scores.sportsmanship, 0) / v : 0;
+      const avgGameplay =
+        v > 0 ? myRatings.reduce((s, r) => s + r.scores.gameplay, 0) / v : 0;
+      const avgStamina =
+        v > 0 ? myRatings.reduce((s, r) => s + r.scores.stamina, 0) / v : 0;
+      const avgTactics =
+        v > 0 ? myRatings.reduce((s, r) => s + r.scores.tactics, 0) / v : 0;
+      const avgSportsmanship =
+        v > 0
+          ? myRatings.reduce((s, r) => s + r.scores.sportsmanship, 0) / v
+          : 0;
 
-    const R =
-      v > 0 ? myRatings.reduce((s, r) => s + r.overallScore, 0) / v : 0;
+      const R =
+        v > 0 ? myRatings.reduce((s, r) => s + r.overallScore, 0) / v : 0;
 
-    const W = v > 0 ? (v / (v + m)) * R + (m / (v + m)) * C : 0;
+      const W = v > 0 ? (v / (v + m)) * R + (m / (v + m)) * C : 0;
 
-    const totalSessions = sessions.length;
-    const attended = sessions.filter((s) =>
-      s.records.some(
-        (rec) => rec.memberId === member.id && rec.status === "present"
-      )
-    ).length;
-    const attendanceRate =
-      totalSessions > 0 ? Math.round((attended / totalSessions) * 100) : 100;
+      const totalSessions = sessions.length;
+      const attended = sessions.filter((s) =>
+        s.records.some(
+          (rec) => rec.memberId === member.id && rec.status === "present"
+        )
+      ).length;
+      const attendanceRate =
+        totalSessions > 0 ? Math.round((attended / totalSessions) * 100) : 100;
 
-    return {
-      memberId: member.id,
-      name: member.name,
-      email: member.email,
-      avatarColor: member.avatarColor,
-      avatarUrl: member.avatarUrl,
-      playStyle: member.playStyle,
-      tokens: member.tokens,
-      rank: 0,
-      tied: false,
-      avgGameplay: Number(avgGameplay.toFixed(1)),
-      avgStamina: Number(avgStamina.toFixed(1)),
-      avgTactics: Number(avgTactics.toFixed(1)),
-      avgSportsmanship: Number(avgSportsmanship.toFixed(1)),
-      rawAverage: Number(R.toFixed(2)),
-      bayesianOut10: Number(W.toFixed(2)),
-      bayesianScore: Number((W * 10).toFixed(1)),
-      votesReceived: v,
-      attendanceRate,
-    };
-  });
+      return {
+        memberId: member.id,
+        name: member.name,
+        email: member.email,
+        avatarColor: member.avatarColor,
+        avatarUrl: member.avatarUrl,
+        playStyle: member.playStyle,
+        tokens: member.tokens,
+        rank: 0,
+        tied: false,
+        avgGameplay: Number(avgGameplay.toFixed(2)),
+        avgStamina: Number(avgStamina.toFixed(2)),
+        avgTactics: Number(avgTactics.toFixed(2)),
+        avgSportsmanship: Number(avgSportsmanship.toFixed(2)),
+        rawAverage: Number(R.toFixed(2)),
+        bayesianOut10: Number(W.toFixed(2)),
+        bayesianScore: Number((W * 10).toFixed(2)),
+        votesReceived: v,
+        attendanceRate,
+      };
+    })
+    .filter((p): p is NonNullable<typeof p> => p !== null);
+
+  if (unranked.length === 0) {
+    return [];
+  }
 
   unranked.sort((a, b) => {
     if (b.bayesianScore !== a.bayesianScore) {
@@ -297,6 +311,12 @@ export function calculateMonthlyRankings(
   sessions: Session[],
   weekKeys: string[]
 ): RankedPlayer[] {
+  const allMonthRatings = ratings.filter((r) => weekKeys.includes(r.weekKey));
+  if (allMonthRatings.length === 0) {
+    // Before starting giving any rank, the monthly rank list will not start
+    return [];
+  }
+
   const playerMembers = members.filter((u) => u.role === "member");
 
   const weeklyMaps: Record<string, Record<string, RankedPlayer>> = {};
@@ -308,100 +328,111 @@ export function calculateMonthlyRankings(
     });
   });
 
-  const allMonthRatings = ratings.filter((r) => weekKeys.includes(r.weekKey));
   const C_month =
-    allMonthRatings.length > 0
-      ? allMonthRatings.reduce((acc, r) => acc + r.overallScore, 0) /
-        allMonthRatings.length
-      : 7.5;
+    allMonthRatings.reduce((acc, r) => acc + r.overallScore, 0) /
+    allMonthRatings.length;
   const m_month = 4; // Monthly prior confidence weight across 4 weeks
 
-  const monthlyList: RankedPlayer[] = playerMembers.map((member) => {
-    let activeWeeks = 0;
-    let totalGameplay = 0;
-    let totalStamina = 0;
-    let totalTactics = 0;
-    let totalSportsmanship = 0;
+  const monthlyList = playerMembers
+    .map((member) => {
+      let activeWeeks = 0;
+      let totalGameplay = 0;
+      let totalStamina = 0;
+      let totalTactics = 0;
+      let totalSportsmanship = 0;
 
-    const weeklyBreakdown: {
-      [weekKey: string]: {
-        score: number;
-        bayesianOut10: number;
-        rank: number;
-        votes: number;
-      };
-    } = {};
-
-    weekKeys.forEach((wk) => {
-      const p = weeklyMaps[wk]?.[member.id];
-      if (p) {
-        weeklyBreakdown[wk] = {
-          score: p.bayesianScore,
-          bayesianOut10: p.bayesianOut10,
-          rank: p.rank,
-          votes: p.votesReceived,
+      const weeklyBreakdown: {
+        [weekKey: string]: {
+          score: number;
+          bayesianOut10: number;
+          rank: number;
+          votes: number;
         };
-        if (p.votesReceived > 0) {
-          activeWeeks++;
-          totalGameplay += p.avgGameplay;
-          totalStamina += p.avgStamina;
-          totalTactics += p.avgTactics;
-          totalSportsmanship += p.avgSportsmanship;
+      } = {};
+
+      weekKeys.forEach((wk) => {
+        const p = weeklyMaps[wk]?.[member.id];
+        if (p) {
+          weeklyBreakdown[wk] = {
+            score: p.bayesianScore,
+            bayesianOut10: p.bayesianOut10,
+            rank: p.rank,
+            votes: p.votesReceived,
+          };
+          if (p.votesReceived > 0) {
+            activeWeeks++;
+            totalGameplay += p.avgGameplay;
+            totalStamina += p.avgStamina;
+            totalTactics += p.avgTactics;
+            totalSportsmanship += p.avgSportsmanship;
+          }
         }
-      }
-    });
+      });
 
-    const myMonthRatings = allMonthRatings.filter(
-      (r) => r.targetMemberId === member.id
-    );
-    const v = myMonthRatings.length;
-    const R =
-      v > 0
-        ? myMonthRatings.reduce((acc, r) => acc + r.overallScore, 0) / v
-        : 0;
+      const myMonthRatings = allMonthRatings.filter(
+        (r) => r.targetMemberId === member.id
+      );
+      const v = myMonthRatings.length;
+      if (v === 0) return null; // Do not rank unrated players before they receive peer ratings
 
-    const W_month =
-      v > 0
-        ? (v / (v + m_month)) * R + (m_month / (v + m_month)) * C_month
-        : 0;
+      const R =
+        v > 0
+          ? myMonthRatings.reduce((acc, r) => acc + r.overallScore, 0) / v
+          : 0;
 
-    const totalSessions = sessions.length;
-    const attended = sessions.filter((s) =>
-      s.records.some(
-        (rec) => rec.memberId === member.id && rec.status === "present"
-      )
-    ).length;
-    const attendanceRate =
-      totalSessions > 0 ? Math.round((attended / totalSessions) * 100) : 100;
+      const W_month =
+        v > 0
+          ? (v / (v + m_month)) * R + (m_month / (v + m_month)) * C_month
+          : 0;
 
-    return {
-      memberId: member.id,
-      name: member.name,
-      email: member.email,
-      avatarColor: member.avatarColor,
-      avatarUrl: member.avatarUrl,
-      playStyle: member.playStyle,
-      tokens: member.tokens,
-      rank: 0,
-      tied: false,
-      avgGameplay:
-        activeWeeks > 0 ? Number((totalGameplay / activeWeeks).toFixed(1)) : 0,
-      avgStamina:
-        activeWeeks > 0 ? Number((totalStamina / activeWeeks).toFixed(1)) : 0,
-      avgTactics:
-        activeWeeks > 0 ? Number((totalTactics / activeWeeks).toFixed(1)) : 0,
-      avgSportsmanship:
-        activeWeeks > 0
-          ? Number((totalSportsmanship / activeWeeks).toFixed(1))
-          : 0,
-      rawAverage: Number(R.toFixed(2)),
-      bayesianOut10: Number(W_month.toFixed(2)),
-      bayesianScore: Number((W_month * 10).toFixed(1)),
-      votesReceived: v,
-      attendanceRate,
-      weeklyBreakdown,
-    };
-  });
+      const totalSessions = sessions.length;
+      const attended = sessions.filter((s) =>
+        s.records.some(
+          (rec) => rec.memberId === member.id && rec.status === "present"
+        )
+      ).length;
+      const attendanceRate =
+        totalSessions > 0 ? Math.round((attended / totalSessions) * 100) : 100;
+
+      return {
+        memberId: member.id,
+        name: member.name,
+        email: member.email,
+        avatarColor: member.avatarColor,
+        avatarUrl: member.avatarUrl,
+        playStyle: member.playStyle,
+        tokens: member.tokens,
+        rank: 0,
+        tied: false,
+        avgGameplay:
+          activeWeeks > 0
+            ? Number((totalGameplay / activeWeeks).toFixed(2))
+            : 0,
+        avgStamina:
+          activeWeeks > 0
+            ? Number((totalStamina / activeWeeks).toFixed(2))
+            : 0,
+        avgTactics:
+          activeWeeks > 0
+            ? Number((totalTactics / activeWeeks).toFixed(2))
+            : 0,
+        avgSportsmanship:
+          activeWeeks > 0
+            ? Number((totalSportsmanship / activeWeeks).toFixed(2))
+            : 0,
+        rawAverage: Number(R.toFixed(2)),
+        bayesianOut10: Number(W_month.toFixed(2)),
+        bayesianScore: Number((W_month * 10).toFixed(2)),
+        votesReceived: v,
+        attendanceRate,
+        weeklyBreakdown,
+      };
+    })
+    .filter((p): p is NonNullable<typeof p> => p !== null);
+
+  if (monthlyList.length === 0) {
+    return [];
+  }
 
   monthlyList.sort((a, b) => {
     if (b.bayesianScore !== a.bayesianScore) {

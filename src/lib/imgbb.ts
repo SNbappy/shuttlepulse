@@ -1,7 +1,6 @@
 /**
  * Compresses an image file in the browser into a square JPEG (360x360)
- * and uploads it to ImgBB (`https://api.imgbb.com/1/upload`).
- * Works seamlessly in both Next.js Web deployments and Capacitor Mobile App builds.
+ * and uploads it to ImgBB CDN (`https://api.imgbb.com/1/upload`).
  */
 export async function compressImageToBase64(
   file: File,
@@ -46,37 +45,7 @@ export async function uploadPhotoToImgBB(
   const cleanKey =
     rawKey && rawKey !== "your_imgbb_api_key_here" ? rawKey.trim() : "";
 
-  // 1. Direct ImgBB API Upload (Works in both Web and Mobile App builds)
-  if (cleanKey) {
-    try {
-      const base64Clean = compressedDataUrl.replace(
-        /^data:image\/[a-zA-Z+]+;base64,/,
-        ""
-      );
-      const formData = new FormData();
-      formData.append("image", base64Clean);
-
-      const imgbbRes = await fetch(
-        `https://api.imgbb.com/1/upload?key=${encodeURIComponent(cleanKey)}`,
-        {
-          method: "POST",
-          body: formData,
-        }
-      );
-      const data = await imgbbRes.json();
-      if (imgbbRes.ok && data?.success && data?.data?.display_url) {
-        return {
-          url: data.data.display_url,
-          hostedOnImgBB: true,
-          message: "Photo uploaded to ImgBB cloud storage.",
-        };
-      }
-    } catch (err) {
-      console.warn("Direct ImgBB upload fallback:", err);
-    }
-  }
-
-  // 2. Try Next.js Server Route `/api/upload-image` (if server-side IMGBB_API_KEY is set)
+  // 1. Next.js Server Route `/api/upload-image` (Server-side key)
   try {
     const res = await fetch("/api/upload-image", {
       method: "POST",
@@ -86,24 +55,50 @@ export async function uploadPhotoToImgBB(
         apiKey: cleanKey || undefined,
       }),
     });
-    if (res.ok) {
-      const data = await res.json();
-      if (data?.success && data?.url) {
-        return {
-          url: data.url,
-          hostedOnImgBB: Boolean(data.hostedOnImgBB),
-          message: data.message,
-        };
-      }
+
+    const data = await res.json();
+    if (res.ok && data?.success && data?.url) {
+      return {
+        url: data.url,
+        hostedOnImgBB: Boolean(data.hostedOnImgBB),
+        message: data.message,
+      };
+    } else if (!cleanKey) {
+      throw new Error(data?.message || "Failed to upload to ImgBB.");
     }
-  } catch {
-    // Offline or static mobile build fallback
+  } catch (err: unknown) {
+    if (!cleanKey) {
+      throw err;
+    }
   }
 
-  return {
-    url: compressedDataUrl,
-    hostedOnImgBB: false,
-    message:
-      "Photo attached (set NEXT_PUBLIC_IMGBB_API_KEY at deployment for cloud hosting).",
-  };
+  // 2. Direct ImgBB API Upload (Fallback when client key is available)
+  if (cleanKey) {
+    const base64Clean = compressedDataUrl.replace(
+      /^data:image\/[a-zA-Z+]+;base64,/,
+      ""
+    );
+    const formData = new FormData();
+    formData.append("image", base64Clean);
+
+    const imgbbRes = await fetch(
+      `https://api.imgbb.com/1/upload?key=${encodeURIComponent(cleanKey)}`,
+      {
+        method: "POST",
+        body: formData,
+      }
+    );
+    const data = await imgbbRes.json();
+    if (imgbbRes.ok && data?.success && data?.data?.display_url) {
+      return {
+        url: data.data.display_url || data.data.url,
+        hostedOnImgBB: true,
+        message: "Photo uploaded to ImgBB cloud storage.",
+      };
+    } else {
+      throw new Error(data?.error?.message || "ImgBB upload failed.");
+    }
+  }
+
+  throw new Error("ImgBB API key is required. Configure IMGBB_API_KEY in environment variables.");
 }

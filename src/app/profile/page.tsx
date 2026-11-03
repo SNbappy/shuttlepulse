@@ -158,7 +158,7 @@ export default function ProfilePage() {
             </span>
           ) : (
             <span className="rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 font-mono text-[11px] font-bold text-emerald-800">
-              {currentUser.tokens} TK Balance
+              {currentUser.tokens.toFixed(2)} TK Balance
             </span>
           )}
         </div>

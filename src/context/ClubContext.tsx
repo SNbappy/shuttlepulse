@@ -29,6 +29,7 @@ import {
 
 interface ClubContextType {
   currentUser: User | null;
+  hydrated: boolean;
   users: User[];
   sessions: Session[];
   ratings: WeeklyRating[];
@@ -1100,6 +1101,7 @@ export function ClubProvider({ children }: { children: React.ReactNode }) {
     <ClubContext.Provider
       value={{
         currentUser,
+        hydrated,
         users,
         sessions,
         ratings,
