@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <linearGradient id="sp-bg" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#064e3b" />
+      <stop offset="55%" stop-color="#047857" />
+      <stop offset="100%" stop-color="#0f766e" />
+    </linearGradient>
+    <linearGradient id="sp-lime" x1="120" y1="96" x2="400" y2="416" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#d9f99d" />
+      <stop offset="100%" stop-color="#a3e635" />
+    </linearGradient>
+  </defs>
+
+  <!-- Squircle App Icon Background -->
+  <rect width="512" height="512" rx="128" fill="url(#sp-bg)" />
+  <rect x="18" y="18" width="476" height="476" rx="112" stroke="#ffffff" stroke-opacity="0.12" stroke-width="6" />
+
+  <!-- Subtle Diagonal Court Speed Line -->
+  <path d="M96 404L416 108" stroke="url(#sp-lime)" stroke-opacity="0.18" stroke-width="14" stroke-linecap="round" />
+
+  <!-- Custom Geometric 'S' Monogram -->
+  <path
+    d="M236 168H158C134.804 168 116 186.804 116 210V214C116 237.196 134.804 256 158 256H202C225.196 256 244 274.804 244 298V302C244 325.196 225.196 344 202 344H118"
+    stroke="#ffffff"
+    stroke-width="38"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+
+  <!-- Custom Geometric 'P' Monogram with Electric Lime Loop -->
+  <path
+    d="M292 344V168H358C386.719 168 410 191.281 410 220C410 248.719 386.719 272 358 272H292"
+    stroke="url(#sp-lime)"
+    stroke-width="38"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+
+  <!-- Shuttlecock Cork Accent Dot -->
+  <circle cx="394" cy="344" r="19" fill="#a3e635" />
+</svg>

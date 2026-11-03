@@ -1,0 +1,258 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-primary: #f2f7f5;
+  --bg-card: #ffffff;
+}
+
+html {
+  -webkit-tap-highlight-color: transparent;
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: #f2f7f5;
+  background-image: 
+    radial-gradient(at 15% 0%, rgba(16, 185, 129, 0.13) 0px, transparent 55%),
+    radial-gradient(at 85% 5%, rgba(20, 184, 166, 0.11) 0px, transparent 50%),
+    radial-gradient(at 50% 100%, rgba(163, 230, 53, 0.08) 0px, transparent 50%);
+  background-attachment: fixed;
+  color: #0f172a;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  overscroll-behavior-y: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+
+/* ============================================================================
+   GPU-Accelerated App & 3D Hero Card Animations
+   ============================================================================ */
+
+@keyframes fadeUp {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes sheetUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Ambient floating glow orbs inside Emerald Hero Cards */
+@keyframes floatOrbSlow {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(-16px, 12px, 0) scale(1.12);
+  }
+}
+
+@keyframes floatOrbReverse {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(18px, -10px, 0) scale(1.1);
+  }
+}
+
+/* Subtle 3D Floating Card Tilt */
+@keyframes floatCard3D {
+  0%,
+  100% {
+    transform: rotateX(2deg) rotateY(-1.5deg) translateY(0px);
+  }
+  50% {
+    transform: rotateX(-1.5deg) rotateY(1.5deg) translateY(-3px);
+  }
+}
+
+/* Diagonal glass light sweep across Hero Cards */
+@keyframes cardShimmer {
+  0% {
+    transform: translateX(-140%) skewX(-20deg);
+  }
+  35%,
+  100% {
+    transform: translateX(220%) skewX(-20deg);
+  }
+}
+
+.animate-fade-up {
+  animation: fadeUp 0.26s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-sheet-up {
+  animation: sheetUp 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-orb-slow {
+  animation: floatOrbSlow 8s ease-in-out infinite;
+}
+
+.animate-orb-reverse {
+  animation: floatOrbReverse 9s ease-in-out infinite;
+}
+
+/* 3D Perspective Stage & Beveled Pass Card */
+.card-3d-stage {
+  perspective: 1200px;
+}
+
+.card-3d-pass {
+  position: relative;
+  overflow: hidden;
+  transform-style: preserve-3d;
+  animation: floatCard3D 9s ease-in-out infinite;
+  box-shadow:
+    0 24px 44px -14px rgba(6, 78, 59, 0.55),
+    0 6px 16px -4px rgba(6, 78, 59, 0.3),
+    inset 0 1px 1px rgba(255, 255, 255, 0.38),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.25);
+  transition:
+    transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.card-3d-pass:hover {
+  transform: rotateX(3.5deg) rotateY(-2deg) translateY(-4px) scale(1.005);
+  box-shadow:
+    0 30px 56px -14px rgba(6, 78, 59, 0.62),
+    0 10px 20px -4px rgba(6, 78, 59, 0.35),
+    inset 0 1px 1.5px rgba(255, 255, 255, 0.45),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.28);
+}
+
+/* Living Emerald Hero Card Shimmer Overlay */
+.hero-card-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-card-shimmer::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 45%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.08),
+    transparent
+  );
+  transform: translateX(-140%) skewX(-20deg);
+  animation: cardShimmer 7.5s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+  pointer-events: none;
+}
+
+/* Tactile Spring & Shine Effect for Interactive Buttons */
+.btn-interactive {
+  position: relative;
+  overflow: hidden;
+  transition:
+    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.btn-interactive:hover {
+  transform: translateY(-1.5px);
+}
+
+.btn-interactive:active {
+  transform: translateY(0px) scale(0.96);
+}
+
+.btn-shine::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -110%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.26),
+    transparent
+  );
+  transform: skewX(-20deg);
+  transition: left 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+}
+
+.btn-shine:hover::after {
+  left: 140%;
+}
+
+/* Staggered Entrance Utilities for Grid Cards */
+.stagger-1 {
+  opacity: 0;
+  animation: fadeUp 0.32s cubic-bezier(0.16, 1, 0.3, 1) 0.03s forwards;
+}
+.stagger-2 {
+  opacity: 0;
+  animation: fadeUp 0.32s cubic-bezier(0.16, 1, 0.3, 1) 0.07s forwards;
+}
+.stagger-3 {
+  opacity: 0;
+  animation: fadeUp 0.32s cubic-bezier(0.16, 1, 0.3, 1) 0.11s forwards;
+}
+.stagger-4 {
+  opacity: 0;
+  animation: fadeUp 0.32s cubic-bezier(0.16, 1, 0.3, 1) 0.15s forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-orb-slow,
+  .animate-orb-reverse,
+  .card-3d-pass,
+  .hero-card-shimmer::after {
+    animation: none !important;
+  }
+}
+
+/* Safe area padding for floating mobile bottom navigation */
+.pb-safe-nav {
+  padding-bottom: calc(5.75rem + env(safe-area-inset-bottom, 0px));
+}
