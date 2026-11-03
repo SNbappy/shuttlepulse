@@ -284,7 +284,7 @@ function mapTxFromDb(r: Record<string, unknown>): TokenTransaction {
 
 export function ClubProvider({ children }: { children: React.ReactNode }) {
   const [users, setUsers] = useState<User[]>(INITIAL_USERS);
-  const [currentUserId, setCurrentUserId] = useState<string | null>("admin-1");
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [sessions, setSessions] = useState<Session[]>(INITIAL_SESSIONS);
   const [ratings, setRatings] = useState<WeeklyRating[]>(INITIAL_RATINGS);
   const [donations, setDonations] = useState<Donation[]>(INITIAL_DONATIONS);
@@ -310,6 +310,7 @@ export function ClubProvider({ children }: { children: React.ReactNode }) {
         const savedCurrentId = localStorage.getItem(
           STORAGE_KEYS.CURRENT_USER_ID
         );
+        const isAuthenticated = localStorage.getItem("sp_auth_authenticated") === "true";
         const savedSessions = localStorage.getItem(STORAGE_KEYS.SESSIONS);
         const savedRatings = localStorage.getItem(STORAGE_KEYS.RATINGS);
         const savedDonations = localStorage.getItem(STORAGE_KEYS.DONATIONS);
@@ -332,8 +333,16 @@ export function ClubProvider({ children }: { children: React.ReactNode }) {
           }
           setUsers(parsed);
         }
-        if (savedCurrentId !== null) {
-          setCurrentUserId(savedCurrentId === "null" ? null : savedCurrentId);
+        if (savedCurrentId !== null && savedCurrentId !== "null") {
+          // If admin-1 was previously set by default without explicit login, clear it
+          if (savedCurrentId === "admin-1" && !isAuthenticated) {
+            setCurrentUserId(null);
+            localStorage.setItem(STORAGE_KEYS.CURRENT_USER_ID, "null");
+          } else {
+            setCurrentUserId(savedCurrentId);
+          }
+        } else {
+          setCurrentUserId(null);
         }
         if (savedSessions) setSessions(JSON.parse(savedSessions));
         if (savedRatings) setRatings(JSON.parse(savedRatings));
@@ -458,6 +467,9 @@ export function ClubProvider({ children }: { children: React.ReactNode }) {
       };
     }
     setCurrentUserId(found.id);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("sp_auth_authenticated", "true");
+    }
     return {
       success: true,
       message: `Signed in as ${found.name}.`,
@@ -466,6 +478,10 @@ export function ClubProvider({ children }: { children: React.ReactNode }) {
 
   const logout = () => {
     setCurrentUserId(null);
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("sp_auth_authenticated");
+      localStorage.setItem(STORAGE_KEYS.CURRENT_USER_ID, "null");
+    }
   };
 
   const registerMember = (
@@ -509,6 +525,9 @@ export function ClubProvider({ children }: { children: React.ReactNode }) {
     setUsers((prev) => [...prev, newUser]);
     setTransactions((prev) => [initTx, ...prev]);
     setCurrentUserId(newUser.id);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("sp_auth_authenticated", "true");
+    }
 
     // Sync to Supabase
     void supabaseUpsert("sp_users", mapUserToDb(newUser));

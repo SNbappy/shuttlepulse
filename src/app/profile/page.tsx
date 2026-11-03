@@ -1,32 +1,14 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useClub } from "@/context/ClubContext";
 import PhotoDropzone from "@/components/PhotoDropzone";
-import {
-  Check,
-  KeyRound,
-  LogOut,
-  ShieldCheck,
-  Database,
-  User as UserIcon,
-  ArrowRight,
-} from "lucide-react";
+import { Check, KeyRound, LogOut, ShieldCheck, Loader2 } from "lucide-react";
 
 export default function ProfilePage() {
   const router = useRouter();
-  const {
-    currentUser,
-    updateUserProfile,
-    logout,
-    imgbbApiKey,
-    setImgbbApiKey,
-    brevoApiKey,
-    setBrevoApiKey,
-    supabaseConnected,
-  } = useClub();
+  const { currentUser, updateUserProfile, logout, imgbbApiKey } = useClub();
 
   const [name, setName] = useState("");
   const [playStyle, setPlayStyle] = useState("All-Court Player");
@@ -48,32 +30,23 @@ export default function ProfilePage() {
   } | null>(null);
 
   useEffect(() => {
-    if (currentUser) {
+    if (!currentUser) {
+      router.replace("/auth");
+    } else {
       setName(currentUser.name);
       setPlayStyle(currentUser.playStyle || "All-Court Player");
       setAvatarUrl(currentUser.avatarUrl);
     }
-  }, [currentUser]);
+  }, [currentUser, router]);
 
   if (!currentUser) {
     return (
-      <div className="animate-fade-up mx-auto max-w-md px-4 pt-8 pb-10">
-        <div className="rounded-2xl border border-emerald-950/5 bg-white p-6 text-center shadow-sm">
-          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
-            <UserIcon className="h-6 w-6" />
-          </div>
-          <h1 className="text-base font-extrabold text-slate-900">
-            Sign In Required
-          </h1>
-          <p className="mt-1 text-xs text-slate-500">
-            Please sign in or register an account to view and edit your profile.
-          </p>
-          <Link
-            href="/auth"
-            className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-emerald-500"
-          >
-            Go to Sign In <ArrowRight className="h-3.5 w-3.5" />
-          </Link>
+      <div className="flex min-h-[60vh] flex-col items-center justify-center px-4">
+        <div className="flex items-center gap-2.5 rounded-2xl border border-emerald-950/5 bg-white px-4 py-3 shadow-sm">
+          <Loader2 className="h-4 w-4 animate-spin text-emerald-600 shrink-0" />
+          <span className="text-xs font-semibold text-slate-600">
+            Redirecting to sign in...
+          </span>
         </div>
       </div>
     );
@@ -154,7 +127,7 @@ export default function ProfilePage() {
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0">
           <h1 className="text-base sm:text-lg font-extrabold text-slate-900 truncate">
-            {isAdmin ? "Admin Profile & Settings" : "Edit Profile"}
+            {isAdmin ? "Admin Profile" : "Edit Profile"}
           </h1>
           <p className="text-xs text-slate-500 truncate">{currentUser.email}</p>
         </div>
@@ -203,10 +176,10 @@ export default function ProfilePage() {
         )}
 
         <form onSubmit={handleSaveProfileInfo} className="space-y-4">
-          {/* Drag & Drop or Browse Photo via ImgBB */}
+          {/* Drag & Drop or Browse Photo */}
           <div>
             <label className="mb-1.5 block text-xs font-semibold text-slate-700">
-              Profile Photo (Upload or Drag & Drop — Hosted via ImgBB)
+              Profile Photo (Upload or Drag & Drop)
             </label>
             <PhotoDropzone
               name={name || currentUser.name}
@@ -358,59 +331,6 @@ export default function ProfilePage() {
           </button>
         </form>
       </div>
-
-      {/* Section 3: Admin-Only Deployment & API Configuration Card */}
-      {isAdmin && (
-        <div className="rounded-2xl border border-emerald-950/5 bg-white p-5 shadow-sm space-y-3.5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Database className="h-4 w-4 text-emerald-600" />
-              <h2 className="text-xs sm:text-sm font-bold text-slate-900">
-                Deployment & Cloud API Keys
-              </h2>
-            </div>
-            <span
-              className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${
-                supabaseConnected
-                  ? "bg-emerald-100 text-emerald-800"
-                  : "bg-slate-100 text-slate-600"
-              }`}
-            >
-              {supabaseConnected
-                ? "Supabase Connected"
-                : "Local Mode (Set .env.local for Supabase)"}
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-            <div>
-              <label className="mb-1 block text-xs font-semibold text-slate-700">
-                ImgBB API Key (Photo Hosting)
-              </label>
-              <input
-                type="text"
-                value={imgbbApiKey}
-                onChange={(e) => setImgbbApiKey(e.target.value)}
-                placeholder="Paste ImgBB API key..."
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 font-mono text-xs text-slate-900 placeholder-slate-400 focus:border-emerald-600 focus:bg-white focus:outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="mb-1 block text-xs font-semibold text-slate-700">
-                Brevo API Key (OTP Email Verification)
-              </label>
-              <input
-                type="password"
-                value={brevoApiKey}
-                onChange={(e) => setBrevoApiKey(e.target.value)}
-                placeholder="Paste Brevo v3 API key..."
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 font-mono text-xs text-slate-900 placeholder-slate-400 focus:border-emerald-600 focus:bg-white focus:outline-none"
-              />
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
