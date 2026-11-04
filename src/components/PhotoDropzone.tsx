@@ -2,6 +2,7 @@
 
 import React, { useState, useRef } from "react";
 import UserAvatar from "@/components/UserAvatar";
+import ModalSheet from "@/components/ModalSheet";
 import { uploadPhotoToImgBB } from "@/lib/imgbb";
 import { UploadCloud, Loader2, Trash2, CheckCircle2 } from "lucide-react";
 
@@ -24,6 +25,7 @@ export default function PhotoDropzone({
   const [isDragging, setIsDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [hostedOnCloud, setHostedOnCloud] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const processFile = async (file?: File) => {
     if (!file || !file.type.startsWith("image/")) return;
@@ -53,94 +55,139 @@ export default function PhotoDropzone({
     await processFile(file);
   };
 
-  return (
-    <div
-      onDragOver={(e) => {
-        e.preventDefault();
-        setIsDragging(true);
-      }}
-      onDragLeave={() => setIsDragging(false)}
-      onDrop={handleDrop}
-      onClick={() => fileInputRef.current?.click()}
-      className={`cursor-pointer rounded-2xl border-2 border-dashed p-3.5 transition-all select-none ${
-        isDragging
-          ? "border-emerald-500 bg-emerald-50/70"
-          : "border-slate-200 bg-slate-50/70 hover:border-emerald-300 hover:bg-emerald-50/30"
-      }`}
-    >
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        onChange={(e) => processFile(e.target.files?.[0])}
-        className="hidden"
-      />
+  const confirmDeletePhoto = () => {
+    setShowDeleteConfirm(false);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+    setHostedOnCloud(false);
+    onPhotoChange(undefined, "Profile photo removed.");
+  };
 
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3 min-w-0">
-          <UserAvatar
-            name={name || "M"}
-            avatarUrl={avatarUrl}
-            avatarColor={avatarColor}
-            size="lg"
-          />
-          <div className="min-w-0">
-            <div className="flex items-center gap-1.5">
-              <p className="text-xs font-bold text-slate-900 truncate">
+  return (
+    <>
+      <div
+        onDragOver={(e) => {
+          e.preventDefault();
+          setIsDragging(true);
+        }}
+        onDragLeave={() => setIsDragging(false)}
+        onDrop={handleDrop}
+        onClick={() => fileInputRef.current?.click()}
+        className={`cursor-pointer rounded-2xl border-2 border-dashed p-3.5 transition-all select-none ${
+          isDragging
+            ? "border-emerald-500 bg-emerald-50/70"
+            : "border-slate-200 bg-slate-50/70 hover:border-emerald-300 hover:bg-emerald-50/30"
+        }`}
+      >
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={(e) => processFile(e.target.files?.[0])}
+          className="hidden"
+        />
+
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <UserAvatar
+              name={name || "M"}
+              avatarUrl={avatarUrl}
+              avatarColor={avatarColor}
+              size="lg"
+            />
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5">
+                <p className="text-xs font-bold text-slate-900 truncate">
+                  {uploading
+                    ? "Uploading to ImgBB..."
+                    : avatarUrl
+                    ? "Profile Photo Attached"
+                    : "Upload or Drop Photo"}
+                </p>
+                {avatarUrl && !uploading && (
+                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                )}
+              </div>
+              <p className="mt-0.5 text-[11px] text-slate-500 truncate">
                 {uploading
-                  ? "Uploading to ImgBB..."
-                  : avatarUrl
-                  ? "Profile Photo Attached"
-                  : "Upload or Drop Photo"}
+                  ? "Optimizing & syncing..."
+                  : hostedOnCloud
+                  ? "Hosted on ImgBB Cloud"
+                  : "Drag & drop image here, or tap to browse"}
               </p>
-              {avatarUrl && !uploading && (
-                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-              )}
             </div>
-            <p className="mt-0.5 text-[11px] text-slate-500 truncate">
-              {uploading
-                ? "Optimizing & syncing..."
-                : hostedOnCloud
-                ? "Hosted on ImgBB Cloud"
-                : "Drag & drop image here, or tap to browse"}
-            </p>
+          </div>
+
+          <div className="flex items-center gap-1.5 shrink-0">
+            {uploading ? (
+              <span className="inline-flex items-center gap-1 rounded-xl bg-emerald-100 px-2.5 py-1.5 text-xs font-semibold text-emerald-800">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 rounded-xl bg-white border border-slate-200 px-2.5 py-1.5 text-xs font-semibold text-emerald-700 shadow-sm">
+                <UploadCloud className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Browse</span>
+              </span>
+            )}
+
+            {avatarUrl && !uploading && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setShowDeleteConfirm(true);
+                }}
+                title="Remove profile photo"
+                aria-label="Remove profile photo"
+                className="inline-flex items-center gap-1 rounded-xl border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-100 transition active:scale-95"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                <span>Delete</span>
+              </button>
+            )}
           </div>
         </div>
+      </div>
 
-        <div className="flex items-center gap-1.5 shrink-0">
-          {uploading ? (
-            <span className="inline-flex items-center gap-1 rounded-xl bg-emerald-100 px-2.5 py-1.5 text-xs font-semibold text-emerald-800">
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1 rounded-xl bg-white border border-slate-200 px-2.5 py-1.5 text-xs font-semibold text-emerald-700 shadow-sm">
-              <UploadCloud className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Browse</span>
-            </span>
-          )}
-
-          {avatarUrl && !uploading && (
+      {/* Confirmation Modal: Delete Profile Photo */}
+      <ModalSheet
+        open={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        title="Delete Profile Photo"
+        maxWidth="max-w-xs"
+      >
+        <div className="text-center space-y-3.5 py-1">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-50 text-rose-600">
+            <Trash2 className="h-6 w-6" />
+          </div>
+          <div>
+            <h4 className="text-sm font-bold text-slate-900">
+              Are you sure you want to delete your photo?
+            </h4>
+            <p className="mt-1 text-xs text-slate-500">
+              Your profile photo will be permanently removed and revert to your initials.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-2 pt-2">
             <button
               type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                if (fileInputRef.current) {
-                  fileInputRef.current.value = "";
-                }
-                setHostedOnCloud(false);
-                onPhotoChange(undefined, "Profile photo removed.");
-              }}
-              title="Remove profile photo"
-              aria-label="Remove profile photo"
-              className="inline-flex items-center gap-1 rounded-xl border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-100 transition active:scale-95"
+              onClick={() => setShowDeleteConfirm(false)}
+              className="rounded-xl border border-slate-200 bg-white py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 active:scale-95 transition"
             >
-              <Trash2 className="h-3.5 w-3.5" />
-              <span>Delete</span>
+              Cancel
             </button>
-          )}
+            <button
+              type="button"
+              onClick={confirmDeletePhoto}
+              className="rounded-xl bg-rose-600 py-2 text-xs font-semibold text-white shadow-sm hover:bg-rose-500 active:scale-95 transition"
+            >
+              Yes, Delete
+            </button>
+          </div>
         </div>
-      </div>
-    </div>
+      </ModalSheet>
+    </>
   );
 }

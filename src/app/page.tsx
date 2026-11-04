@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useClub } from "@/context/ClubContext";
 import ModalSheet from "@/components/ModalSheet";
 import UserAvatar from "@/components/UserAvatar";
+import PwaInstallBanner from "@/components/PwaInstallBanner";
 import {
   getCurrentCalendarPeriod,
   getWeeksForMonth,
@@ -48,6 +49,9 @@ export default function HomePage() {
 
   return (
     <div className="animate-fade-up mx-auto max-w-3xl px-4 pt-4 pb-8 space-y-4">
+      {/* PWA Mobile Installation Prompt Banner */}
+      <PwaInstallBanner />
+
       {/* 3D Perspective Emerald Court Pass Card */}
       <div className="card-3d-stage">
         <div className="card-3d-pass hero-card-shimmer rounded-3xl border border-emerald-400/20 bg-gradient-to-br from-emerald-950 via-emerald-800 to-teal-900 p-4 sm:p-6 text-white">
@@ -338,13 +342,15 @@ export default function HomePage() {
         {monthlyRanks.length > 0 ? (
           <div className="divide-y divide-slate-100">
             {monthlyRanks.slice(0, 3).map((player) => (
-              <div
+              <Link
                 key={player.memberId}
-                className="flex items-center justify-between gap-3 py-2.5 first:pt-1 last:pb-1"
+                href={`/rankings/${player.memberId}`}
+                title={`View ${player.name}'s 25-Question Performance Breakdown`}
+                className="group flex items-center justify-between gap-3 py-2.5 px-2 -mx-2 rounded-xl hover:bg-emerald-50/60 active:scale-[0.99] transition cursor-pointer"
               >
                 <div className="flex items-center gap-2.5 min-w-0">
                   <span
-                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg font-mono text-xs font-bold ${
+                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg font-mono text-xs font-bold transition-transform group-hover:scale-105 ${
                       player.rank === 1
                         ? "bg-gradient-to-br from-amber-400 to-amber-500 text-slate-950 shadow-sm"
                         : player.rank === 2
@@ -361,18 +367,24 @@ export default function HomePage() {
                     size="sm"
                   />
                   <div className="min-w-0">
-                    <p className="text-xs sm:text-sm font-semibold text-slate-900 truncate">
+                    <p className="text-xs sm:text-sm font-semibold text-slate-900 group-hover:text-emerald-700 transition truncate">
                       {player.name}
                     </p>
                     <p className="text-[11px] text-slate-500 truncate">
-                      {player.playStyle} • <span className="font-mono text-emerald-700 font-semibold">{player.tokens.toFixed(2)} TK</span>
+                      {player.playStyle} •{" "}
+                      <span className="font-mono text-emerald-700 font-semibold">
+                        {player.tokens.toFixed(2)} TK
+                      </span>
                     </p>
                   </div>
                 </div>
-                <span className="shrink-0 whitespace-nowrap rounded-lg bg-emerald-50 border border-emerald-200/70 px-2.5 py-1 font-mono text-xs font-bold text-emerald-800">
-                  {player.bayesianOut10.toFixed(2)} / 10.00
-                </span>
-              </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span className="whitespace-nowrap rounded-lg bg-emerald-50 border border-emerald-200/70 px-2.5 py-1 font-mono text-xs font-bold text-emerald-800 group-hover:border-emerald-300 transition">
+                    {player.bayesianOut10.toFixed(2)} / 10.00
+                  </span>
+                  <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-emerald-600 group-hover:translate-x-0.5 transition shrink-0" />
+                </div>
+              </Link>
             ))}
           </div>
         ) : (

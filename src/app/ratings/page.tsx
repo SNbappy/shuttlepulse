@@ -82,6 +82,7 @@ export default function WeeklyRatingsPage() {
   const [editableQuestions, setEditableQuestions] =
     useState<SurveyQuestion[]>(surveyQuestions);
   const [comment, setComment] = useState("");
+  const [showConfirmSubmitModal, setShowConfirmSubmitModal] = useState(false);
   const [feedback, setFeedback] = useState<{
     type: "success" | "error";
     text: string;
@@ -149,8 +150,14 @@ export default function WeeklyRatingsPage() {
     ).toFixed(2)
   );
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handlePreSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!selectedMemberId) return;
+    setShowConfirmSubmitModal(true);
+  };
+
+  const handleFinalSubmit = () => {
+    setShowConfirmSubmitModal(false);
     if (!selectedMemberId) return;
 
     const res = submitWeeklyRating(
@@ -397,7 +404,7 @@ export default function WeeklyRatingsPage() {
             : undefined
         }
       >
-        <form onSubmit={handleSubmit} className="space-y-3.5">
+        <form onSubmit={handlePreSubmit} className="space-y-3.5">
           {/* Warning inside modal */}
           <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-900">
             <strong className="font-bold">Important:</strong> Once submitted,
@@ -503,6 +510,47 @@ export default function WeeklyRatingsPage() {
             )}
           </div>
         </form>
+      </ModalSheet>
+
+      {/* Modal 1.5: Confirm Survey Rating Submission */}
+      <ModalSheet
+        open={showConfirmSubmitModal}
+        onClose={() => setShowConfirmSubmitModal(false)}
+        title="Confirm Survey Submission"
+        maxWidth="max-w-sm"
+      >
+        <div className="text-center space-y-3.5 py-1">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
+            <AlertTriangle className="h-6 w-6" />
+          </div>
+          <div>
+            <h4 className="text-sm font-bold text-slate-900">
+              Submit peer rating for {targetPlayer?.name}?
+            </h4>
+            <div className="mt-2 inline-flex items-center gap-1.5 rounded-xl bg-emerald-50 border border-emerald-200 px-3 py-1.5 text-xs font-bold text-emerald-800">
+              Overall Rating: {overall25Mean} / 10.00
+            </div>
+            <p className="mt-2.5 text-xs font-semibold text-rose-600 bg-rose-50 border border-rose-200 rounded-xl p-2.5 leading-relaxed">
+              ⚠️ Are you sure? Once submitted, this survey is permanently locked. You cannot edit or change your scores in the future.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-2 pt-2">
+            <button
+              type="button"
+              onClick={() => setShowConfirmSubmitModal(false)}
+              className="rounded-xl border border-slate-200 bg-white py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 active:scale-95 transition"
+            >
+              Review Scores
+            </button>
+            <button
+              type="button"
+              onClick={handleFinalSubmit}
+              className="rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 py-2 text-xs font-semibold text-white shadow-sm hover:opacity-95 active:scale-95 transition"
+            >
+              Yes, Submit & Lock
+            </button>
+          </div>
+        </div>
       </ModalSheet>
 
       {/* Modal 2: How Weekly & Monthly Survey Works (i) Info Modal */}

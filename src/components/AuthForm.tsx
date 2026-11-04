@@ -4,6 +4,8 @@ import React, { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useClub } from "@/context/ClubContext";
 import PhotoDropzone from "@/components/PhotoDropzone";
+import PasswordCriteriaBox from "@/components/PasswordCriteriaBox";
+import { validatePassword } from "@/lib/passwordValidation";
 import { sendVerificationOtpEmail, verifyOtpCode } from "@/lib/brevo";
 import {
   MailCheck,
@@ -15,6 +17,8 @@ import {
   ArrowLeft,
   CheckCircle2,
   AlertCircle,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 
 interface AuthFormProps {
@@ -57,6 +61,12 @@ export default function AuthForm({ initialMode }: AuthFormProps) {
   const [playStyle, setPlayStyle] = useState("All-Court Player");
   const [avatarUrl, setAvatarUrl] = useState<string | undefined>(undefined);
 
+  // Password visibility states
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showRegPassword, setShowRegPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   // OTP Verification states
   const [submitting, setSubmitting] = useState(false);
   const [verificationToken, setVerificationToken] = useState<string | null>(null);
@@ -90,7 +100,7 @@ export default function AuthForm({ initialMode }: AuthFormProps) {
     }
   };
 
-  // Handle Registration Step 1: Send OTP to user's email
+  // Handle Registration Step 1: Validate strong password & send OTP
   const handleRegisterSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setFeedback(null);
@@ -99,15 +109,17 @@ export default function AuthForm({ initialMode }: AuthFormProps) {
     if (users.some((u) => u.email.toLowerCase() === normalizedEmail)) {
       setFeedback({
         type: "error",
-        text: "An account with this email address already exists.",
+        text: "An account with this email address already exists. Please sign in.",
       });
       return;
     }
 
-    if (password.length < 6) {
+    // Enforce 5-criteria regex standard
+    const pwCheck = validatePassword(password);
+    if (!pwCheck.isValid) {
       setFeedback({
         type: "error",
-        text: "Password must be at least 6 characters.",
+        text: "Please satisfy all 5 password requirements listed below before continuing.",
       });
       return;
     }
@@ -123,10 +135,8 @@ export default function AuthForm({ initialMode }: AuthFormProps) {
       setEnteredOtp("");
       setStep("verify_otp");
       setResendCountdown(60);
-      setFeedback({
-        type: "success",
-        text: otpRes.message,
-      });
+      // Clear generic top alert so we don't display duplicate banners
+      setFeedback(null);
     } catch (err: unknown) {
       const msg =
         err instanceof Error ? err.message : "Could not send verification email.";
@@ -212,10 +222,8 @@ export default function AuthForm({ initialMode }: AuthFormProps) {
       setEnteredOtp("");
       setStep("forgot_reset");
       setResendCountdown(60);
-      setFeedback({
-        type: "success",
-        text: otpRes.message,
-      });
+      // Clear generic top alert so we don't display duplicate banners
+      setFeedback(null);
     } catch (err: unknown) {
       const msg =
         err instanceof Error
@@ -232,10 +240,12 @@ export default function AuthForm({ initialMode }: AuthFormProps) {
     e.preventDefault();
     setFeedback(null);
 
-    if (newPassword.length < 6) {
+    // Enforce 5-criteria regex standard
+    const pwCheck = validatePassword(newPassword);
+    if (!pwCheck.isValid) {
       setFeedback({
         type: "error",
-        text: "New password must be at least 6 characters.",
+        text: "Your new password must satisfy all 5 requirements listed below.",
       });
       return;
     }
@@ -243,7 +253,7 @@ export default function AuthForm({ initialMode }: AuthFormProps) {
     if (newPassword !== confirmPassword) {
       setFeedback({
         type: "error",
-        text: "Passwords do not match. Please re-enter.",
+        text: "New passwords do not match. Please re-enter.",
       });
       return;
     }
@@ -352,15 +362,15 @@ export default function AuthForm({ initialMode }: AuthFormProps) {
             "Sign in with your registered email and password."}
           {mode === "register" &&
             (step === "verify_otp"
-              ? `Enter the 6-digit verification code sent to ${email}.`
+              ? `Enter the 6-digit code sent to ${email}.`
               : "Register with email verification to receive your 500.00 TK welcome token balance.")}
           {mode === "forgot_password" &&
             (step === "forgot_reset"
-              ? `Enter the 6-digit code sent to ${email} and set your new password.`
+              ? `Enter the 6-digit code sent to ${email} and choose a strong password.`
               : "Enter your registered email address to receive a secure password reset code.")}
         </p>
 
-        {/* Feedback alert banner */}
+        {/* Single Feedback Alert Banner */}
         {feedback && (
           <div
             className={`mt-4 rounded-xl border p-3 text-xs font-medium flex items-start gap-2 ${
@@ -414,14 +424,28 @@ export default function AuthForm({ initialMode }: AuthFormProps) {
                   Forgot password?
                 </button>
               </div>
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-emerald-600 focus:bg-white focus:outline-none"
-              />
+              <div className="relative">
+                <input
+                  type={showLoginPassword ? "text" : "password"}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 pr-10 text-sm text-slate-900 placeholder-slate-400 focus:border-emerald-600 focus:bg-white focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowLoginPassword((prev) => !prev)}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
+                  aria-label={showLoginPassword ? "Hide password" : "Show password"}
+                >
+                  {showLoginPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
             </div>
 
             <button
@@ -434,7 +458,7 @@ export default function AuthForm({ initialMode }: AuthFormProps) {
         )}
 
         {/* ============================================================== */}
-        {/* VIEW 2: Registration - Step 1: Input Profile Details           */}
+        {/* VIEW 2: Registration - Step 1: Input Profile & Strong Password */}
         {/* ============================================================== */}
         {mode === "register" && step === "form" && (
           <form onSubmit={handleRegisterSendOtp} className="mt-4 space-y-3.5">
@@ -478,17 +502,33 @@ export default function AuthForm({ initialMode }: AuthFormProps) {
 
             <div>
               <label className="mb-1 block text-xs font-semibold text-slate-700">
-                Create Password (min. 6 characters)
+                Create Strong Password
               </label>
-              <input
-                type="password"
-                required
-                minLength={6}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-emerald-600 focus:bg-white focus:outline-none"
-              />
+              <div className="relative">
+                <input
+                  type={showRegPassword ? "text" : "password"}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter a secure password"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 pr-10 text-sm text-slate-900 placeholder-slate-400 focus:border-emerald-600 focus:bg-white focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowRegPassword((prev) => !prev)}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
+                  aria-label={showRegPassword ? "Hide password" : "Show password"}
+                >
+                  {showRegPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
+
+              {/* Real-time regex password criteria checklist */}
+              <PasswordCriteriaBox password={password} showAlways={true} />
             </div>
 
             <div>
@@ -529,14 +569,15 @@ export default function AuthForm({ initialMode }: AuthFormProps) {
         {/* ============================================================== */}
         {mode === "register" && step === "verify_otp" && (
           <form onSubmit={handleVerifyRegisterOtp} className="mt-4 space-y-4">
-            <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-3 text-xs text-emerald-950 flex items-start gap-2.5">
+            {/* Single clean notice card */}
+            <div className="rounded-xl border border-emerald-100 bg-emerald-50/70 p-3 text-xs text-emerald-950 flex items-start gap-2.5">
               <Mail className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
               <div>
                 <p className="font-semibold text-emerald-900">
                   Verification Code Sent
                 </p>
                 <p className="mt-0.5 text-[11px] text-emerald-800 leading-relaxed">
-                  We sent a 6-digit verification code to <strong>{email}</strong>. Please check your inbox and spam folder.
+                  We sent a 6-digit code to <strong>{email}</strong>. Please check your inbox and spam folder.
                 </p>
               </div>
             </div>
@@ -576,7 +617,10 @@ export default function AuthForm({ initialMode }: AuthFormProps) {
             <div className="flex items-center justify-between pt-1 text-xs">
               <button
                 type="button"
-                onClick={() => setStep("form")}
+                onClick={() => {
+                  setStep("form");
+                  setFeedback(null);
+                }}
                 className="inline-flex items-center gap-1 font-medium text-slate-500 hover:text-slate-800"
               >
                 <ArrowLeft className="h-3.5 w-3.5" />
@@ -654,7 +698,8 @@ export default function AuthForm({ initialMode }: AuthFormProps) {
         {/* ============================================================== */}
         {mode === "forgot_password" && step === "forgot_reset" && (
           <form onSubmit={handleForgotResetSubmit} className="mt-4 space-y-3.5">
-            <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-3 text-xs text-emerald-950 flex items-start gap-2.5">
+            {/* Single clean notice card */}
+            <div className="rounded-xl border border-emerald-100 bg-emerald-50/70 p-3 text-xs text-emerald-950 flex items-start gap-2.5">
               <Mail className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
               <div>
                 <p className="font-semibold text-emerald-900">
@@ -687,32 +732,61 @@ export default function AuthForm({ initialMode }: AuthFormProps) {
 
             <div>
               <label className="mb-1 block text-xs font-semibold text-slate-700">
-                New Password (min. 6 characters)
+                Create New Password
               </label>
-              <input
-                type="password"
-                required
-                minLength={6}
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-emerald-600 focus:bg-white focus:outline-none"
-              />
+              <div className="relative">
+                <input
+                  type={showNewPassword ? "text" : "password"}
+                  required
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Enter a strong new password"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 pr-10 text-sm text-slate-900 placeholder-slate-400 focus:border-emerald-600 focus:bg-white focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPassword((prev) => !prev)}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
+                  aria-label={showNewPassword ? "Hide password" : "Show password"}
+                >
+                  {showNewPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
+
+              {/* Password criteria checklist for reset */}
+              <PasswordCriteriaBox password={newPassword} showAlways={true} />
             </div>
 
             <div>
               <label className="mb-1 block text-xs font-semibold text-slate-700">
                 Confirm New Password
               </label>
-              <input
-                type="password"
-                required
-                minLength={6}
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-emerald-600 focus:bg-white focus:outline-none"
-              />
+              <div className="relative">
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Re-enter your new password"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 pr-10 text-sm text-slate-900 placeholder-slate-400 focus:border-emerald-600 focus:bg-white focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword((prev) => !prev)}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
+                  aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
             </div>
 
             <button
@@ -731,7 +805,10 @@ export default function AuthForm({ initialMode }: AuthFormProps) {
             <div className="flex items-center justify-between pt-1 text-xs">
               <button
                 type="button"
-                onClick={() => setStep("forgot_request")}
+                onClick={() => {
+                  setStep("forgot_request");
+                  setFeedback(null);
+                }}
                 className="inline-flex items-center gap-1 font-medium text-slate-500 hover:text-slate-800"
               >
                 <ArrowLeft className="h-3.5 w-3.5" />
