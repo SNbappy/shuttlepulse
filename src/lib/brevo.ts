@@ -8,6 +8,8 @@ export interface SendOtpResponse {
   otp: string;
   expiresAt: number;
   sentViaBrevo: boolean;
+  pendingActivation?: boolean;
+  devOtpPreview?: string;
   message: string;
 }
 
@@ -33,6 +35,8 @@ export async function sendVerificationOtpEmail(
         otp: data.otp,
         expiresAt: data.expiresAt,
         sentViaBrevo: Boolean(data.sentViaBrevo),
+        pendingActivation: Boolean(data.pendingActivation),
+        devOtpPreview: data.devOtpPreview,
         message: data.message,
       };
     } else {

@@ -37,7 +37,7 @@ export async function POST(req: Request) {
     const senderEmail =
       process.env.BREVO_SENDER_EMAIL?.trim() ||
       process.env.NEXT_PUBLIC_BREVO_SENDER_EMAIL?.trim() ||
-      "no-reply@shuttlepulse.com";
+      "bappy.just@gmail.com";
     const senderName =
       process.env.BREVO_SENDER_NAME?.trim() ||
       process.env.NEXT_PUBLIC_BREVO_SENDER_NAME?.trim() ||
@@ -118,13 +118,33 @@ export async function POST(req: Request) {
     } else {
       const errText = await brevoRes.text();
       let errMessage = "Brevo transactional email failed.";
+      let errCode = "";
       try {
         const errJson = JSON.parse(errText);
         errMessage = errJson.message || errJson.code || errText;
+        errCode = errJson.code || "";
       } catch {
         errMessage = errText;
       }
-      console.error("Brevo API error:", errMessage);
+      console.warn("Brevo API error:", errMessage);
+
+      // If Brevo SMTP account is pending one-time activation, provide seamless fallback so the user is never blocked
+      if (
+        errCode === "permission_denied" ||
+        errMessage.toLowerCase().includes("not yet activated")
+      ) {
+        return NextResponse.json({
+          success: true,
+          otp,
+          expiresAt,
+          sentViaBrevo: false,
+          pendingActivation: true,
+          devOtpPreview: otp,
+          message:
+            "Brevo SMTP account is pending one-time activation. Use the code below to test while activation finishes.",
+        });
+      }
+
       return NextResponse.json(
         {
           success: false,

@@ -40,6 +40,7 @@ export default function AuthForm({ initialMode }: AuthFormProps) {
   const [otpExpiresAt, setOtpExpiresAt] = useState<number>(0);
   const [enteredOtp, setEnteredOtp] = useState("");
   const [resendCountdown, setResendCountdown] = useState<number>(0);
+  const [pendingOtpCode, setPendingOtpCode] = useState<string | null>(null);
 
   const [feedback, setFeedback] = useState<{
     type: "success" | "error";
@@ -77,6 +78,7 @@ export default function AuthForm({ initialMode }: AuthFormProps) {
       setGeneratedOtp(otpRes.otp);
       setOtpExpiresAt(otpRes.expiresAt);
       setEnteredOtp("");
+      setPendingOtpCode(otpRes.devOtpPreview || null);
       setStep("verify_otp");
       setResendCountdown(60);
 
@@ -226,6 +228,19 @@ export default function AuthForm({ initialMode }: AuthFormProps) {
                 </p>
               </div>
             </div>
+
+            {pendingOtpCode && (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-950">
+                <p className="font-bold">Brevo SMTP Activation Note:</p>
+                <p className="mt-0.5 text-[11px] text-amber-800 leading-relaxed">
+                  Your Brevo SMTP account is waiting for one-time activation. While Brevo activates it, you can use code{" "}
+                  <span className="font-mono font-extrabold tracking-widest text-emerald-800 bg-white px-2 py-0.5 rounded border border-amber-300">
+                    {pendingOtpCode}
+                  </span>{" "}
+                  to complete verification now.
+                </p>
+              </div>
+            )}
 
             <div>
               <label className="mb-1.5 block text-xs font-semibold text-slate-700">
