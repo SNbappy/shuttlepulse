@@ -13,6 +13,7 @@ export default function RouteGuard({ children }: { children: React.ReactNode }) 
     pathname === "/auth" ||
     pathname === "/login" ||
     pathname === "/register" ||
+    pathname === "/forgot-password" ||
     pathname === "/logout";
 
   useEffect(() => {

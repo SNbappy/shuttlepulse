@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useClub } from "@/context/ClubContext";
 import PhotoDropzone from "@/components/PhotoDropzone";
+import ModalSheet from "@/components/ModalSheet";
 import { Check, KeyRound, LogOut, ShieldCheck, Loader2 } from "lucide-react";
 
 export default function ProfilePage() {
@@ -18,6 +19,7 @@ export default function ProfilePage() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const [infoMessage, setInfoMessage] = useState<{
     type: "success" | "error";
@@ -134,16 +136,55 @@ export default function ProfilePage() {
 
         <button
           type="button"
-          onClick={() => {
-            logout();
-            router.push("/auth");
-          }}
+          onClick={() => setShowLogoutConfirm(true)}
           className="shrink-0 whitespace-nowrap inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-white px-3 py-1.5 text-xs font-semibold text-rose-600 shadow-sm hover:bg-rose-50 active:scale-95 transition"
         >
           <LogOut className="h-3.5 w-3.5" />
           Sign Out
         </button>
       </div>
+
+      {/* Logout Confirmation Alert Modal */}
+      <ModalSheet
+        open={showLogoutConfirm}
+        onClose={() => setShowLogoutConfirm(false)}
+        title="Sign Out"
+        maxWidth="max-w-xs"
+      >
+        <div className="text-center space-y-3.5 py-1">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-50 text-rose-600">
+            <LogOut className="h-6 w-6" />
+          </div>
+          <div>
+            <h4 className="text-sm font-bold text-slate-900">
+              Are you sure you want to log out?
+            </h4>
+            <p className="mt-1 text-xs text-slate-500">
+              You will need to sign in again to access club sessions and wallet.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-2 pt-2">
+            <button
+              type="button"
+              onClick={() => setShowLogoutConfirm(false)}
+              className="rounded-xl border border-slate-200 bg-white py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 active:scale-95 transition"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setShowLogoutConfirm(false);
+                logout();
+                router.push("/login");
+              }}
+              className="rounded-xl bg-rose-600 py-2 text-xs font-semibold text-white shadow-sm hover:bg-rose-500 active:scale-95 transition"
+            >
+              Yes, Log Out
+            </button>
+          </div>
+        </div>
+      </ModalSheet>
 
       {/* Section 1: Profile Photo (ImgBB Drag & Drop) & Basic Info */}
       <div className="rounded-2xl border border-emerald-950/5 bg-white p-5 shadow-sm">

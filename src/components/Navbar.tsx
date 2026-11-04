@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useClub } from "@/context/ClubContext";
 import UserAvatar from "@/components/UserAvatar";
+import ModalSheet from "@/components/ModalSheet";
 import {
   Home,
   CalendarCheck,
@@ -24,6 +25,7 @@ export default function Navbar() {
 
   const [navLoadingHref, setNavLoadingHref] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
 
   // Clear route transition progress bar & close dropdown when route changes
@@ -200,8 +202,7 @@ export default function Navbar() {
                       type="button"
                       onClick={() => {
                         setMenuOpen(false);
-                        logout();
-                        router.push("/login");
+                        setShowLogoutConfirm(true);
                       }}
                       className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-rose-600 transition hover:bg-rose-50"
                     >
@@ -223,6 +224,48 @@ export default function Navbar() {
           </div>
         </div>
       </header>
+
+      {/* Logout Confirmation Alert Modal */}
+      <ModalSheet
+        open={showLogoutConfirm}
+        onClose={() => setShowLogoutConfirm(false)}
+        title="Sign Out"
+        maxWidth="max-w-xs"
+      >
+        <div className="text-center space-y-3.5 py-1">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-50 text-rose-600">
+            <LogOut className="h-6 w-6" />
+          </div>
+          <div>
+            <h4 className="text-sm font-bold text-slate-900">
+              Are you sure you want to log out?
+            </h4>
+            <p className="mt-1 text-xs text-slate-500">
+              You will need to sign in again to access club sessions and wallet.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-2 pt-2">
+            <button
+              type="button"
+              onClick={() => setShowLogoutConfirm(false)}
+              className="rounded-xl border border-slate-200 bg-white py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 active:scale-95 transition"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setShowLogoutConfirm(false);
+                logout();
+                router.push("/login");
+              }}
+              className="rounded-xl bg-rose-600 py-2 text-xs font-semibold text-white shadow-sm hover:bg-rose-500 active:scale-95 transition"
+            >
+              Yes, Log Out
+            </button>
+          </div>
+        </div>
+      </ModalSheet>
 
       {/* Floating Glass Mobile Bottom Navigation Dock (Authenticated users only) */}
       {currentUser && (

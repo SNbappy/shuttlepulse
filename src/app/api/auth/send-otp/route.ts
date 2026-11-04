@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { generateVerificationToken } from "@/lib/otpCrypto";
 
 /**
  * POST /api/auth/send-otp
@@ -7,24 +8,27 @@ import { NextResponse } from "next/server";
  *
  * Environment Variables:
  *   - BREVO_API_KEY: v3 API key from Brevo dashboard (starts with xkeysib-...)
- *   - BREVO_SENDER_EMAIL: Sender email address verified in your Brevo account
+ *   - BREVO_SENDER_EMAIL: Sender email address verified in your Brevo account (e.g. bappy.just@gmail.com)
  *   - BREVO_SENDER_NAME: Display name of the sender
  */
 export async function POST(req: Request) {
   try {
-    const { email, name } = (await req.json()) as {
+    const { email, name, purpose } = (await req.json()) as {
       email?: string;
       name?: string;
+      purpose?: "registration" | "reset_password";
     };
 
     if (!email || !email.includes("@")) {
       return NextResponse.json(
-        { success: false, message: "Valid email address is required." },
+        { success: false, message: "A valid email address is required." },
         { status: 400 }
       );
     }
 
     const cleanEmail = email.trim().toLowerCase();
+    const tokenPurpose =
+      purpose === "reset_password" ? "reset_password" : "registration";
 
     // Generate secure 6-digit numeric OTP
     const otp = String(Math.floor(100000 + Math.random() * 900000));
@@ -51,11 +55,32 @@ export async function POST(req: Request) {
         {
           success: false,
           message:
-            "Brevo API key is not configured. Please add BREVO_API_KEY and verified BREVO_SENDER_EMAIL in environment variables.",
+            "Brevo API key is not configured in server environment. Please set BREVO_API_KEY.",
         },
-        { status: 400 }
+        { status: 500 }
       );
     }
+
+    // Generate HMAC-signed verification token containing the hashed OTP
+    const verificationToken = generateVerificationToken(
+      cleanEmail,
+      otp,
+      expiresAt,
+      tokenPurpose
+    );
+
+    const isReset = tokenPurpose === "reset_password";
+    const emailSubject = isReset
+      ? `${otp} is your ShuttlePulse password reset code`
+      : `${otp} is your ShuttlePulse verification code`;
+
+    const headline = isReset
+      ? "Password Reset Request"
+      : "Club Membership Verification";
+
+    const instruction = isReset
+      ? `Use the 6-digit verification code below to securely reset your password for your ShuttlePulse account:`
+      : `Use the 6-digit verification code below to verify your email address and activate your ShuttlePulse club account with a welcome balance of <strong>500.00 TK</strong>:`;
 
     const htmlContent = `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 32px 24px; border-radius: 20px; border: 1px solid #e2e8f0; background: #ffffff;">
@@ -64,7 +89,7 @@ export async function POST(req: Request) {
             Shuttle<span style="color: #059669;">Pulse</span>
           </h1>
           <p style="margin: 4px 0 0; color: #64748b; font-size: 12px; font-weight: 500;">
-            Badminton Club Membership Verification
+            ${headline}
           </p>
         </div>
 
@@ -72,7 +97,7 @@ export async function POST(req: Request) {
           Hi <strong>${name || "Player"}</strong>,
         </p>
         <p style="margin: 0 0 20px; color: #475569; font-size: 14px; line-height: 1.6;">
-          Use the 6-digit verification code below to verify your email address and activate your ShuttlePulse club account with a welcome balance of <strong>500.00 TK</strong>:
+          ${instruction}
         </p>
 
         <div style="background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%); border: 2px dashed #6ee7b7; border-radius: 16px; padding: 20px; text-align: center; margin-bottom: 20px;">
@@ -82,7 +107,7 @@ export async function POST(req: Request) {
         </div>
 
         <p style="margin: 0 0 24px; color: #64748b; font-size: 12px; line-height: 1.5; text-align: center;">
-          This verification code is valid for <strong>10 minutes</strong>. If you did not register for ShuttlePulse, please disregard this email.
+          This verification code is valid for <strong>10 minutes</strong>. If you did not request this, you can safely ignore this email.
         </p>
 
         <hr style="border: 0; border-top: 1px solid #f1f5f9; margin: 24px 0 16px;" />
@@ -102,7 +127,7 @@ export async function POST(req: Request) {
       body: JSON.stringify({
         sender: { name: senderName, email: senderEmail },
         to: [{ email: cleanEmail, name: name || "Club Member" }],
-        subject: `${otp} is your ShuttlePulse verification code`,
+        subject: emailSubject,
         htmlContent,
       }),
     });
@@ -110,14 +135,13 @@ export async function POST(req: Request) {
     if (brevoRes.ok) {
       return NextResponse.json({
         success: true,
-        otp,
+        verificationToken,
         expiresAt,
-        sentViaBrevo: true,
         message: `A 6-digit verification code has been sent to ${cleanEmail}. Please check your inbox and spam folder.`,
       });
     } else {
       const errText = await brevoRes.text();
-      let errMessage = "Brevo transactional email failed.";
+      let errMessage = "Brevo transactional email delivery failed.";
       let errCode = "";
       try {
         const errJson = JSON.parse(errText);
@@ -126,35 +150,33 @@ export async function POST(req: Request) {
       } catch {
         errMessage = errText;
       }
-      console.warn("Brevo API error:", errMessage);
 
-      // If Brevo SMTP account is pending one-time activation, provide seamless fallback so the user is never blocked
+      console.warn("Brevo API error:", { errCode, errMessage });
+
       if (
         errCode === "permission_denied" ||
         errMessage.toLowerCase().includes("not yet activated")
       ) {
-        return NextResponse.json({
-          success: true,
-          otp,
-          expiresAt,
-          sentViaBrevo: false,
-          pendingActivation: true,
-          devOtpPreview: otp,
-          message:
-            "Brevo SMTP account is pending one-time activation. Use the code below to test while activation finishes.",
-        });
+        return NextResponse.json(
+          {
+            success: false,
+            message:
+              "Your Brevo transactional SMTP relay is pending one-time activation. Please visit your Brevo dashboard (Transactional > Settings) or contact Brevo to activate SMTP relay.",
+          },
+          { status: 403 }
+        );
       }
 
       return NextResponse.json(
         {
           success: false,
-          message: `Brevo Delivery Error: ${errMessage}. Verify that '${senderEmail}' is an authorized sender in your Brevo account.`,
+          message: `Email delivery error: ${errMessage}`,
         },
         { status: 400 }
       );
     }
   } catch (error) {
-    console.error("Brevo send-otp route exception:", error);
+    console.error("send-otp route exception:", error);
     return NextResponse.json(
       { success: false, message: "Failed to dispatch verification email." },
       { status: 500 }

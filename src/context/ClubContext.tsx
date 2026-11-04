@@ -53,6 +53,10 @@ interface ClubContextType {
     playStyle?: string,
     avatarUrl?: string
   ) => { success: boolean; message: string };
+  resetPasswordByEmail: (
+    email: string,
+    newPassword: string
+  ) => { success: boolean; message: string };
   updateUserProfile: (updates: {
     name?: string;
     playStyle?: string;
@@ -538,6 +542,44 @@ export function ClubProvider({ children }: { children: React.ReactNode }) {
       success: true,
       message:
         "Email verified & account created! 500 TK Shuttle Token has been credited to your wallet.",
+    };
+  };
+
+  const resetPasswordByEmail = (email: string, newPassword: string) => {
+    const normalized = email.trim().toLowerCase();
+    const found = users.find((u) => u.email.toLowerCase() === normalized);
+    if (!found) {
+      return {
+        success: false,
+        message: "No account found with this email address.",
+      };
+    }
+    if (!newPassword || newPassword.trim().length < 6) {
+      return {
+        success: false,
+        message: "Password must be at least 6 characters.",
+      };
+    }
+
+    let updatedUserObj: User | null = null;
+    setUsers((prev) =>
+      prev.map((u) => {
+        if (u.id !== found.id) return u;
+        updatedUserObj = {
+          ...u,
+          password: newPassword.trim(),
+        };
+        return updatedUserObj;
+      })
+    );
+
+    if (updatedUserObj) {
+      void supabaseUpsert("sp_users", mapUserToDb(updatedUserObj));
+    }
+
+    return {
+      success: true,
+      message: "Password reset successfully. You can now sign in with your new password.",
     };
   };
 
@@ -1116,6 +1158,7 @@ export function ClubProvider({ children }: { children: React.ReactNode }) {
         login,
         logout,
         registerMember,
+        resetPasswordByEmail,
         updateUserProfile,
         recordAttendanceSession,
         updateAttendanceSession,
