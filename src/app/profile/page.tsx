@@ -63,7 +63,7 @@ export default function ProfilePage() {
     const res = updateUserProfile({
       name: isAdmin ? "Admin" : name,
       playStyle,
-      avatarUrl,
+      avatarUrl: avatarUrl || null,
     });
 
     setInfoMessage({
@@ -229,6 +229,9 @@ export default function ProfilePage() {
               apiKey={imgbbApiKey}
               onPhotoChange={(url, statusMsg) => {
                 setAvatarUrl(url);
+                updateUserProfile({
+                  avatarUrl: url || null,
+                });
                 if (statusMsg) {
                   setInfoMessage({ type: "success", text: statusMsg });
                 }

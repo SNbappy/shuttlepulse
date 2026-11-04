@@ -61,7 +61,7 @@ interface ClubContextType {
     name?: string;
     playStyle?: string;
     password?: string;
-    avatarUrl?: string;
+    avatarUrl?: string | null;
   }) => { success: boolean; message: string };
   recordAttendanceSession: (
     title: string,
@@ -587,7 +587,7 @@ export function ClubProvider({ children }: { children: React.ReactNode }) {
     name?: string;
     playStyle?: string;
     password?: string;
-    avatarUrl?: string;
+    avatarUrl?: string | null;
   }) => {
     if (!currentUser) {
       return { success: false, message: "You must be signed in." };
@@ -597,6 +597,11 @@ export function ClubProvider({ children }: { children: React.ReactNode }) {
       currentUser.role === "admin"
         ? "Admin"
         : updates.name?.trim() || currentUser.name;
+
+    const hasAvatarUpdate = "avatarUrl" in updates;
+    const nextAvatarUrl = hasAvatarUpdate
+      ? updates.avatarUrl || undefined
+      : currentUser.avatarUrl;
 
     let updatedUserObj: User | null = null;
 
@@ -614,8 +619,7 @@ export function ClubProvider({ children }: { children: React.ReactNode }) {
             updates.password && updates.password.trim().length > 0
               ? updates.password.trim()
               : u.password,
-          avatarUrl:
-            updates.avatarUrl !== undefined ? updates.avatarUrl : u.avatarUrl,
+          avatarUrl: nextAvatarUrl,
         };
         return updatedUserObj;
       })
@@ -632,10 +636,7 @@ export function ClubProvider({ children }: { children: React.ReactNode }) {
             ? {
                 ...d,
                 memberName: nextName,
-                avatarUrl:
-                  updates.avatarUrl !== undefined
-                    ? updates.avatarUrl
-                    : d.avatarUrl,
+                avatarUrl: nextAvatarUrl,
               }
             : d
         )
